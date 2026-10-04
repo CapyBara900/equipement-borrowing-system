@@ -71,7 +71,7 @@ document.getElementById('signInForm').addEventListener('submit', async (e) => {
 const registerRules = {
   regName: [Rules.required('Full name'), Rules.maxLength(100, 'Full name')],
   regEmail: [Rules.required('Email'), Rules.email()],
-  regPassword: [Rules.required('Password'), Rules.minLength(8, 'Password'), rules.maxLength(16, 'Password')],
+  regPassword: [Rules.required('Password'), Rules.minLength(8, 'Password'), Rules.maxLength(16, 'Password')],
   regConfirm: [Rules.required('Confirm password'), Rules.matches('regPassword', 'Passwords')],
 };
 liveValidate(registerRules, 'registerBtn');
@@ -92,18 +92,19 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     });
     toast('Account created successfully. Please sign in.', 'ok');
 
-  // Return to the login form instead of automatically signing in.
-  registerPane.hidden = true;
-  signInPane.hidden = false;
+    // Return to the login form instead of automatically signing in.
+    registerPane.hidden = true;
+    signInPane.hidden = false;
 
-  // Clear registration fields.
-  document.getElementById('regName').value = '';
-  document.getElementById('regEmail').value = '';
-  document.getElementById('regPassword').value = '';
-  document.getElementById('regConfirm').value = '';
+    // Clear registration fields.
+    document.getElementById('regName').value = '';
+    document.getElementById('regEmail').value = '';
+    document.getElementById('regPassword').value = '';
+    document.getElementById('regConfirm').value = '';
 
-  btn.disabled = false;
-  btn.textContent = 'Create account';
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+    
   } catch (err) {
     toast(err.message, 'bad');
     btn.disabled = false;
