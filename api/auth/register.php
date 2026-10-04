@@ -23,6 +23,10 @@ if (strlen($password) < 8) {
     sendJson(400, ['success' => false, 'message' => 'Password must be at least 8 characters.']);
 }
 
+if (strlen($password) > 16) {
+    sendJson(400, ['success' => false, 'message' => 'Password must be 16 characters or fewer.']);
+}
+
 try {
     $check = $db->prepare('SELECT user_id FROM users WHERE email = :email');
     $check->execute(['email' => $email]);

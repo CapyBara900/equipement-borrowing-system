@@ -71,7 +71,7 @@ document.getElementById('signInForm').addEventListener('submit', async (e) => {
 const registerRules = {
   regName: [Rules.required('Full name'), Rules.maxLength(100, 'Full name')],
   regEmail: [Rules.required('Email'), Rules.email()],
-  regPassword: [Rules.required('Password'), Rules.minLength(8, 'Password')],
+  regPassword: [Rules.required('Password'), Rules.minLength(8, 'Password'), rules.maxLength(16, 'Password')],
   regConfirm: [Rules.required('Confirm password'), Rules.matches('regPassword', 'Passwords')],
 };
 liveValidate(registerRules, 'registerBtn');
@@ -90,12 +90,20 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       email: document.getElementById('regEmail').value.trim(),
       password: document.getElementById('regPassword').value,
     });
-    // Sign straight in so they land on the dashboard, not back at a form.
-    await Api.login({
-      email: document.getElementById('regEmail').value.trim(),
-      password: document.getElementById('regPassword').value,
-    });
-    location.href = 'dashboard.html';
+    toast('Account created successfully. Please sign in.', 'ok');
+
+  // Return to the login form instead of automatically signing in.
+  registerPane.hidden = true;
+  signInPane.hidden = false;
+
+  // Clear registration fields.
+  document.getElementById('regName').value = '';
+  document.getElementById('regEmail').value = '';
+  document.getElementById('regPassword').value = '';
+  document.getElementById('regConfirm').value = '';
+
+  btn.disabled = false;
+  btn.textContent = 'Create account';
   } catch (err) {
     toast(err.message, 'bad');
     btn.disabled = false;
