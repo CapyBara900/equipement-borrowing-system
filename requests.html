@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Requests — Equipment Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand">Equipment Desk</span>
+  <button class="btn btn-sm btn-outline-light" type="button"
+          data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Open menu">Menu</button>
+</header>
+
+<div class="offcanvas offcanvas-start rail-canvas" tabindex="-1" id="mobileNav">
+  <div class="offcanvas-body p-0"></div>
+</div>
+
+<div class="app-shell">
+  <aside class="rail"></aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <h1 id="pageTitle">Requests</h1>
+        <p id="pageSub">Loading…</p>
+      </div>
+    </div>
+
+    <div class="panel mb-3">
+      <div class="panel-body">
+        <div class="row g-2">
+          <div class="col-12 col-lg-3">
+            <label class="form-label" for="statusFilter">Status</label>
+            <select class="form-select" id="statusFilter">
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="returned">Returned</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="col-6 col-lg-3">
+            <label class="form-label" for="dateFrom">Requested from</label>
+            <input class="form-control" type="date" id="dateFrom">
+          </div>
+          <div class="col-6 col-lg-3">
+            <label class="form-label" for="dateTo">Requested to</label>
+            <input class="form-control" type="date" id="dateTo">
+          </div>
+          <div class="col-12 col-lg-3 d-flex align-items-end">
+            <button class="btn btn-outline-secondary w-100" id="clearFilters">Clear filters</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="requestList"><div class="empty">Loading requests…</div></div>
+
+    <nav class="d-flex justify-content-between align-items-center mt-3" id="pager" hidden>
+      <button class="btn btn-outline-secondary btn-sm" id="prevPage">Previous</button>
+      <span style="font-size:.88rem;color:#5b6b83" id="pageLabel"></span>
+      <button class="btn btn-outline-secondary btn-sm" id="nextPage">Next</button>
+    </nav>
+  </main>
+</div>
+
+<div id="toastZone"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/requests.js"></script>
+</body>
+</html>

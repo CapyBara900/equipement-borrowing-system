@@ -1,0 +1,271 @@
+/* ==========================================================================
+   app.js — shared helpers loaded on every signed-in page.
+   ========================================================================== */
+
+let CURRENT_USER = null;
+
+/* ---------- XSS-safe rendering -------------------------------------------
+   Everything from the database goes through this before being put into the
+   DOM. The backend strips tags on the way in; this escapes on the way out.
+   -------------------------------------------------------------------------- */
+function esc(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/* ---------- Toasts -------------------------------------------------------- */
+
+function toast(message, kind = 'ok') {
+  let zone = document.getElementById('toastZone');
+  if (!zone) {
+    zone = document.createElement('div');
+    zone.id = 'toastZone';
+    document.body.appendChild(zone);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast-msg' + (kind === 'bad' ? ' bad' : '');
+  el.setAttribute('role', 'status');
+  el.textContent = message;
+  zone.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+/* ---------- Navigation ---------------------------------------------------- */
+
+const NAV_LINKS = [
+  { href: 'dashboard.html', label: 'Overview', roles: ['admin', 'staff', 'customer'] },
+  { href: 'equipment.html', label: 'Equipment', roles: ['admin', 'staff', 'customer'] },
+  { href: 'requests.html', label: 'Requests', roles: ['admin', 'staff', 'customer'] },
+  { href: 'returns.html', label: 'Returns', roles: ['admin', 'staff'] },
+  { href: 'notifications.html', label: 'Notifications', roles: ['customer'], badge: true },
+  { href: 'admin.html', label: 'People & categories', roles: ['admin'] },
+];
+
+function navMarkup(user, unreadCount) {
+  const here = location.pathname.split('/').pop() || 'dashboard.html';
+  const links = NAV_LINKS
+    .filter(l => l.roles.includes(user.role))
+    .map(l => {
+      const active = l.href === here ? ' active' : '';
+      const badge = (l.badge && unreadCount > 0)
+        ? ` <span class="badge-count">${unreadCount}</span>` : '';
+      return `<a class="nav-item${active}" href="${l.href}">
+                <span>${esc(l.label)}</span>${badge}
+              </a>`;
+    }).join('');
+
+  return `
+    <div class="rail-brand">Equipment Desk<span>Borrowing &amp; returns</span></div>
+    <nav>${links}</nav>
+    <div class="rail-foot">
+      <span class="who">${esc(user.name)}</span>
+      <span>${esc(user.role)}</span>
+      <button class="btn btn-sm btn-outline-light w-100 mt-2" id="signOutBtn">Sign out</button>
+    </div>`;
+}
+
+async function renderShell(user) {
+  let unread = 0;
+  try {
+    const res = await Api.listNotifications({ unread_only: '1' });
+    unread = res.data.length;
+  } catch (e) { /* notifications are non-critical chrome */ }
+
+  const markup = navMarkup(user, unread);
+  const rail = document.querySelector('.rail');
+  if (rail) rail.innerHTML = markup;
+  const canvas = document.querySelector('.rail-canvas .offcanvas-body');
+  if (canvas) canvas.innerHTML = markup;
+
+  document.querySelectorAll('#signOutBtn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try { await Api.logout(); } catch (e) { /* sign out locally regardless */ }
+      location.href = 'index.html';
+    });
+  });
+}
+
+/* ---------- Auth guard ----------------------------------------------------
+   Every protected page calls this first. If there's no valid session the
+   browser goes back to the sign-in screen. The backend enforces this too —
+   this is just so people don't stare at an empty page.
+   -------------------------------------------------------------------------- */
+async function requireSession(allowedRoles = null) {
+  try {
+    const res = await Api.me();
+    CURRENT_USER = res.data;
+  } catch (err) {
+    location.href = 'index.html';
+    throw err;
+  }
+  if (allowedRoles && !allowedRoles.includes(CURRENT_USER.role)) {
+    document.querySelector('.main').innerHTML =
+      `<div class="empty"><strong>This page isn't available for your account</strong>
+       Ask an administrator if you think you should have access.</div>`;
+    await renderShell(CURRENT_USER);
+    throw new Error('role not permitted');
+  }
+  await renderShell(CURRENT_USER);
+  return CURRENT_USER;
+}
+
+/* ---------- Form validation ----------------------------------------------
+   Rules are declared per field; showError/clearError drive the inline
+   messages. Runs on submit and on blur.
+   -------------------------------------------------------------------------- */
+
+function showError(input, message) {
+  input.classList.add('invalid');
+  input.setAttribute('aria-invalid', 'true');
+  const box = document.querySelector(`[data-error-for="${input.id}"]`);
+  if (box) { box.textContent = message; box.classList.add('show'); box.setAttribute('role', 'alert'); box.setAttribute('aria-live', 'polite'); }
+}
+
+function clearError(input) {
+  input.classList.remove('invalid');
+  input.removeAttribute('aria-invalid');
+  const box = document.querySelector(`[data-error-for="${input.id}"]`);
+  if (box) { box.textContent = ''; box.classList.remove('show'); box.removeAttribute('role'); box.removeAttribute('aria-live'); }
+}
+
+/**
+ * rules: { fieldId: [ {test: fn, message: str}, ... ] }
+ * Returns true when every field passes.
+ */
+function validate(rules) {
+  let ok = true;
+  let firstBad = null;
+
+  Object.entries(rules).forEach(([id, checks]) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    clearError(input);
+    const value = input.value.trim();
+
+    for (const check of checks) {
+      if (!check.test(value, input)) {
+        showError(input, check.message);
+        ok = false;
+        if (!firstBad) firstBad = input;
+        break;
+      }
+    }
+  });
+
+  if (firstBad) firstBad.focus();
+  return ok;
+}
+
+const Rules = {
+  required: (label) => ({
+    test: v => v.length > 0,
+    message: `${label} is required.`,
+  }),
+  email: () => ({
+    test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    message: 'Enter a valid email address, like name@school.edu.',
+  }),
+  minLength: (n, label) => ({
+    test: v => v.length >= n,
+    message: `${label} must be at least ${n} characters.`,
+  }),
+  maxLength: (n, label) => ({
+    test: v => v.length <= n,
+    message: `${label} must be ${n} characters or fewer.`,
+  }),
+  matches: (otherId, label) => ({
+    test: v => v === document.getElementById(otherId).value,
+    message: `${label} do not match.`,
+  }),
+  notPastDate: (label) => ({
+    test: v => {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      return new Date(v) >= today;
+    },
+    message: `${label} cannot be in the past.`,
+  }),
+  onOrAfterField: (otherId, label) => ({
+  test: v => new Date(v) >= new Date(document.getElementById(otherId).value),
+  message: `${label} must be the same as or after the pick up date.`,
+  }),
+};
+
+/** Re-validate a single field when the person leaves it. */
+function liveValidate(rules, buttonId = null) {
+  const button = buttonId ? document.getElementById(buttonId) : null;
+
+  const syncButton = () => {
+    if (!button) return;
+    button.disabled = !formIsValid(rules);
+  };
+
+  Object.keys(rules).forEach(id => {
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    const checkField = (showMessage) => {
+      const value = input.value.trim();
+      if (showMessage) clearError(input);
+      for (const check of rules[id]) {
+        if (!check.test(value, input)) {
+          if (showMessage) showError(input, check.message);
+          return false;
+        }
+      }
+      if (showMessage) clearError(input);
+      return true;
+    };
+
+    input.addEventListener('blur', () => checkField(true));
+    input.addEventListener('input', () => {
+      // Once a user starts correcting a field, update its error immediately.
+      if (input.classList.contains('invalid')) checkField(true);
+      syncButton();
+    });
+    input.addEventListener('change', () => {
+      checkField(input.classList.contains('invalid'));
+      syncButton();
+    });
+  });
+
+  syncButton();
+  return syncButton;
+}
+
+function formIsValid(rules) {
+  return Object.entries(rules).every(([id, checks]) => {
+    const input = document.getElementById(id);
+    if (!input) return true;
+    const value = input.value.trim();
+    return checks.every(check => check.test(value, input));
+  });
+}
+
+/* ---------- Small formatters ---------------------------------------------- */
+
+function pill(status) {
+  const label = String(status || '').replace(/_/g, ' ');
+  return `<span class="pill p-${esc(status)}">${esc(label)}</span>`;
+}
+
+function fmtDate(value) {
+  if (!value) return '—';
+  const d = new Date(value.replace(' ', 'T'));
+  if (isNaN(d)) return esc(value);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function emptyState(title, hint) {
+  return `<div class="empty"><strong>${esc(title)}</strong>${esc(hint)}</div>`;
+}
+
+/** Debounce so typing in a search box doesn't fire a request per keystroke. */
+function debounce(fn, wait = 300) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+}

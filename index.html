@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Equipment Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="auth-wrap">
+
+  <aside class="auth-aside">
+    <div class="brand-header mb-5">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white mb-3" style="color: #fff;">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
+      </svg>
+      <div style="font-size: 1.75rem; font-weight: 700; color: #fff; letter-spacing: -0.02em;">Equipment Desk</div>
+      <div style="color: #94a3b8; font-size: 1rem; margin-top: 0.2rem;">Equipment Borrowing & Management System</div>
+    </div>
+
+    <h1>Borrow campus equipment without the logbook.</h1>
+    <p>Check what's free, request it, and track it back to the shelf. Staff approve requests and log condition on return.</p>
+    <div class="legend">
+      <div><span class="swatch" style="background:var(--ok)"></span> Available to request</div>
+      <div><span class="swatch" style="background:var(--busy)"></span> Currently borrowed</div>
+      <div><span class="swatch" style="background:var(--fault)"></span> Out for repair</div>
+    </div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+
+      <!-- Sign in -->
+      <section id="signInPane">
+        <h2 class="mb-1" style="font-size: 1.5rem; font-weight: 700; color: var(--ink);">Sign in</h2>
+        <p class="text-muted mb-4" style="font-size: 0.95rem; color: var(--slate);">Use the account your school issued you.</p>
+
+        <form id="signInForm" novalidate>
+          <div class="mb-3">
+            <label class="form-label" for="loginEmail">Email address</label>
+            <input class="form-control" type="email" id="loginEmail" autocomplete="email" placeholder="name@school.edu" required>
+            <div class="field-error" data-error-for="loginEmail"></div>
+          </div>
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="form-label mb-0" for="loginPassword">Password</label>
+            </div>
+            <div class="input-group mt-1">
+              <input class="form-control" type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" required>
+              <button class="btn btn-outline-secondary" type="button" id="toggleLoginPassword" aria-label="Show password">Show</button>
+            </div>
+            <div class="field-error" data-error-for="loginPassword"></div>
+          </div>
+          <button class="btn btn-primary w-100 mb-3" type="submit" id="signInBtn" disabled style="padding: 0.6rem; font-size: 1rem; font-weight: 600;">Sign in</button>
+        </form>
+
+        <div class="text-center mt-4">
+          <p class="mb-0" style="font-size: 0.9rem; color: var(--slate);">
+            Don't have an account? <a href="#" id="toRegister" style="font-weight: 600;">Create one</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Register -->
+      <section id="registerPane" hidden>
+        <h2 class="mb-1" style="font-size: 1.5rem; font-weight: 700; color: var(--ink);">Create an account</h2>
+        <p class="text-muted mb-4" style="font-size: 0.95rem; color: var(--slate);">New accounts can browse equipment and submit requests.</p>
+
+        <form id="registerForm" novalidate>
+          <div class="mb-3">
+            <label class="form-label" for="regName">Full name</label>
+            <input class="form-control" type="text" id="regName" autocomplete="name" placeholder="John Doe" required>
+            <div class="field-error" data-error-for="regName"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="regEmail">Email address</label>
+            <input class="form-control" type="email" id="regEmail" autocomplete="email" placeholder="name@school.edu" required>
+            <div class="field-error" data-error-for="regEmail"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="regPassword">Password</label>
+            <input class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="field-error" data-error-for="regPassword"></div>
+            <div class="form-text mt-1" style="font-size: 0.8rem; color: var(--slate);">At least 8 characters.</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label" for="regConfirm">Confirm password</label>
+            <input class="form-control" type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="field-error" data-error-for="regConfirm"></div>
+          </div>
+          <button class="btn btn-primary w-100 mb-3" type="submit" id="registerBtn" disabled style="padding: 0.6rem; font-size: 1rem; font-weight: 600;">Create account</button>
+        </form>
+
+        <div class="text-center mt-4">
+          <p class="mb-0" style="font-size: 0.9rem; color: var(--slate);">
+            Already registered? <a href="#" id="toSignIn" style="font-weight: 600;">Sign in</a>
+          </p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div id="toastZone"></div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/login.js"></script>
+</body>
+</html>
