@@ -25,6 +25,7 @@ async function loadOutOnLoan() {
             <div class="meta">
               <span class="refid">#${esc(r.request_id)}</span> · ${esc(r.user_name)}
               · due ${fmtDate(r.expected_return_date)}
+              · quantity ${esc(r.requested_quantity)}
               ${overdue ? ' · <strong style="color:var(--fault)">overdue</strong>' : ''}
             </div>
           </div>

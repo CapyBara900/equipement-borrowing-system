@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../includes/bootstrap.php';
 
 const EQUIPMENT_SELECT = '
     SELECT e.equipment_id, e.equipment_name, e.description, e.serial_number, e.status,
-           e.category_id, c.category_name, e.created_at
+           e.category_id, e.total_quantity, e.available_quantity, c.category_name, e.created_at
     FROM equipment e
     LEFT JOIN categories c ON c.category_id = e.category_id
 ';
@@ -15,20 +15,14 @@ $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
 
     case 'GET':
+        try {
         $user = requireLogin();
 
         // ----------------------------------------------------------------
-        // Build the SELECT differently for customers vs admin/staff.
+        // Customers see only universal catalog availability. Their personal
+        // request history is provided by the requests endpoint instead.
         //
-        // • Customers receive a computed "display_status":
-        //     - 'pending'     → their OWN pending request on this item
-        //     - 'borrowed'    → their OWN approved request (item active)
-        //     - 'unavailable' → another customer already holds pending/approved
-        //     - actual status → everything else (available, maintenance, …)
-        //   The real equipment.status is never mutated; 'unavailable' only
-        //   exists in this query result, never in the database.
-        //
-        // • Admin / staff receive:
+        // Admin / staff receive:
         //     - e.status (raw, unmodified — must stay 'pending' so the
         //       approval workflow can check and act on it correctly)
         //     - pending_request_id, pending_user_id, pending_user_name
@@ -36,28 +30,17 @@ switch ($method) {
         // ----------------------------------------------------------------
 
         if ($user['role'] === 'customer') {
-            // LEFT JOIN scoped to the CURRENT customer's own active requests.
-            // br.user_id IS NULL  → no row matched → someone else (or nobody)
-            //   has an active request → show 'unavailable' when equipment is
-            //   pending/borrowed.
-            // br.user_id IS NOT NULL → this customer owns the active request
-            //   → show the real status ('pending' or 'borrowed').
             $baseSelect = "
                 SELECT e.equipment_id, e.equipment_name, e.description,
                        e.serial_number,
                        CASE
-                           WHEN e.status IN ('pending', 'borrowed') AND br.user_id IS NULL
-                               THEN 'unavailable'
-                           ELSE e.status
+                           WHEN e.available_quantity > 0 THEN 'available'
+                           ELSE 'unavailable'
                        END AS status,
-                       br.request_id AS my_request_id,
-                       e.category_id, c.category_name, e.created_at
+                       e.category_id, e.total_quantity, e.available_quantity,
+                       c.category_name, e.created_at
                 FROM equipment e
                 LEFT JOIN categories c ON c.category_id = e.category_id
-                LEFT JOIN borrowing_requests br
-                       ON br.equipment_id = e.equipment_id
-                      AND br.user_id      = :current_user_id
-                      AND br.status       IN ('pending', 'approved')
             ";
         } else {
             // Admin / staff: raw status + pending request info for management.
@@ -65,7 +48,10 @@ switch ($method) {
             // submitted it without visiting the separate Requests page.
             $baseSelect = "
                 SELECT e.equipment_id, e.equipment_name, e.description,
-                       e.serial_number, e.status,
+                       e.serial_number,
+                       CASE WHEN e.available_quantity > 0 THEN 'available' ELSE 'unavailable' END AS status,
+                       e.status AS equipment_status,
+                       e.total_quantity, e.available_quantity,
                        br.request_id  AS pending_request_id,
                        br.user_id     AS pending_user_id,
                        u_req.name     AS pending_user_name,
@@ -75,6 +61,9 @@ switch ($method) {
                 LEFT JOIN borrowing_requests br
                        ON br.equipment_id = e.equipment_id
                       AND br.status       = 'pending'
+                       AND br.request_id = (SELECT MAX(br2.request_id) FROM borrowing_requests br2
+                                            WHERE br2.equipment_id = e.equipment_id
+                                              AND br2.status = 'pending')
                 LEFT JOIN users u_req ON u_req.user_id = br.user_id
             ";
         }
@@ -82,9 +71,6 @@ switch ($method) {
         if (isset($_GET['id'])) {
             $stmt = $db->prepare($baseSelect . ' WHERE e.equipment_id = :id');
             $binds = ['id' => $_GET['id']];
-            if ($user['role'] === 'customer') {
-                $binds['current_user_id'] = $user['user_id'];
-            }
             $stmt->execute($binds);
             $item = $stmt->fetch();
             if (!$item) {
@@ -97,10 +83,6 @@ switch ($method) {
         $conditions = [];
         $params = [];
 
-        if ($user['role'] === 'customer') {
-            $params['current_user_id'] = $user['user_id'];
-        }
-
         if (!empty($_GET['search'])) {
             $conditions[] = '(e.equipment_name LIKE :search OR e.description LIKE :search OR e.serial_number LIKE :search)';
             $params['search'] = '%' . $_GET['search'] . '%';
@@ -110,11 +92,11 @@ switch ($method) {
             $params['category_id'] = $_GET['category_id'];
         }
         if (!empty($_GET['status'])) {
-            if ($user['role'] === 'customer') {
-                // Filter against the computed customer-facing status (may be 'unavailable').
-                $conditions[] = "(CASE WHEN e.status IN ('pending', 'borrowed') AND br.user_id IS NULL THEN 'unavailable' ELSE e.status END) = :status";
+            if (in_array($_GET['status'], ['available', 'unavailable'], true)) {
+                $conditions[] = "(CASE WHEN e.available_quantity > 0 THEN 'available' ELSE 'unavailable' END) = :status";
             } else {
-                // Admin/staff filter against the real database status.
+                // These filters describe the equipment workflow/condition,
+                // not catalog availability.
                 $conditions[] = 'e.status = :status';
             }
             $params['status'] = $_GET['status'];
@@ -140,18 +122,25 @@ switch ($method) {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         sendJson(200, ['success' => true, 'data' => $stmt->fetchAll(), 'page' => $page, 'limit' => $limit]);
+        } catch (PDOException $e) {
+            sendJson(500, ['success' => false, 'message' => 'Could not load equipment. Please try again.']);
+        }
         break;
 
     case 'POST':
-        requireRole(['admin']);
+        requireRole(['admin', 'staff']);
         $body = getJsonBody();
         $name = cleanText($body['equipment_name'] ?? '');
         $description = cleanText($body['description'] ?? '');
         $serialNumber = cleanText($body['serial_number'] ?? '');
         $categoryId = $body['category_id'] ?? null;
         $status = $body['status'] ?? 'available';
+        $totalQuantity = $body['total_quantity'] ?? null;
         if ($name === '') {
             sendJson(400, ['success' => false, 'message' => 'equipment_name is required.']);
+        }
+        if (filter_var($totalQuantity, FILTER_VALIDATE_INT) === false || (int)$totalQuantity < 1) {
+            sendJson(400, ['success' => false, 'message' => 'total_quantity must be a positive whole number.']);
         }
         if (strlen($name) > 150 || strlen($description) > 500 || strlen($serialNumber) > 100) {
             sendJson(400, ['success' => false, 'message' => 'One or more equipment fields are too long.']);
@@ -161,14 +150,18 @@ switch ($method) {
         }
         try {
             $stmt = $db->prepare(
-                'INSERT INTO equipment (equipment_name, description, serial_number, category_id, status)
-                 VALUES (:name, :description, :serial_number, :category_id, :status)'
+                'INSERT INTO equipment (equipment_name, description, serial_number, category_id, total_quantity, available_quantity, status)
+                 VALUES (:name, :description, :serial_number, :category_id, :total_quantity, :available_quantity, :status)'
             );
             $stmt->execute([
                 'name'          => $name,
                 'description'   => $description,
                 'serial_number' => $serialNumber ?: null,
                 'category_id'   => $categoryId ?: null,
+                'total_quantity' => (int)$totalQuantity,
+                // A new item has no committed units yet. The workflow status
+                // describes its condition, while availability is inventory.
+                'available_quantity' => (int)$totalQuantity,
                 'status'        => $status,
             ]);
             sendJson(201, ['success' => true, 'message' => 'Equipment added.', 'data' => ['equipment_id' => (int)$db->lastInsertId()]]);
@@ -178,7 +171,7 @@ switch ($method) {
         break;
 
     case 'PUT':
-        requireRole(['admin']);
+        requireRole(['admin', 'staff']);
         $body = getJsonBody();
         $id = $body['equipment_id'] ?? null;
         if (!$id) {
@@ -189,8 +182,12 @@ switch ($method) {
         $serialNumber = cleanText($body['serial_number'] ?? '');
         $categoryId = $body['category_id'] ?? null;
         $status = $body['status'] ?? 'available';
+        $totalQuantity = $body['total_quantity'] ?? null;
         if ($name === '') {
             sendJson(400, ['success' => false, 'message' => 'equipment_name is required.']);
+        }
+        if (filter_var($totalQuantity, FILTER_VALIDATE_INT) === false || (int)$totalQuantity < 1) {
+            sendJson(400, ['success' => false, 'message' => 'total_quantity must be a positive whole number.']);
         }
         if (strlen($name) > 150 || strlen($description) > 500 || strlen($serialNumber) > 100) {
             sendJson(400, ['success' => false, 'message' => 'One or more equipment fields are too long.']);
@@ -198,21 +195,52 @@ switch ($method) {
         if (!in_array($status, ['available', 'borrowed', 'maintenance', 'pending'], true)) {
             sendJson(400, ['success' => false, 'message' => 'Invalid equipment status.']);
         }
-        $stmt = $db->prepare(
-            'UPDATE equipment
-             SET equipment_name = :name, description = :description, serial_number = :serial_number,
-                 category_id = :category_id, status = :status
-             WHERE equipment_id = :id'
-        );
-        $stmt->execute([
-            'name'          => $name,
-            'description'   => $description,
-            'serial_number' => $serialNumber ?: null,
-            'category_id'   => $categoryId ?: null,
-            'status'        => $status,
-            'id'            => $id,
-        ]);
-        sendJson(200, ['success' => true, 'message' => 'Equipment updated.']);
+        try {
+            $db->beginTransaction();
+            $currentStmt = $db->prepare(
+                'SELECT total_quantity, available_quantity
+                 FROM equipment WHERE equipment_id = :id FOR UPDATE'
+            );
+            $currentStmt->execute(['id' => $id]);
+            $current = $currentStmt->fetch();
+            if (!$current) {
+                $db->rollBack();
+                sendJson(404, ['success' => false, 'message' => 'Equipment not found.']);
+            }
+            $unavailable = (int)$current['total_quantity'] - (int)$current['available_quantity'];
+            if ((int)$totalQuantity < $unavailable) {
+                $db->rollBack();
+                sendJson(409, ['success' => false, 'message' => "Total quantity cannot be lower than the {$unavailable} units currently unavailable."]);
+            }
+            $oldTotal = (int)$current['total_quantity'];
+            $oldAvailable = (int)$current['available_quantity'];
+            $newTotal = (int)$totalQuantity;
+
+            // Increasing the inventory adds new units; it must not reset or
+            // discard units already committed by pending/approved requests.
+            $quantityIncrease = max(0, $newTotal - $oldTotal);
+            $available = min($newTotal, $oldAvailable + $quantityIncrease);
+            if ($newTotal < $oldTotal) {
+                $available = min($newTotal, $oldAvailable);
+            }
+            $stmt = $db->prepare(
+                'UPDATE equipment
+                 SET equipment_name = :name, description = :description, serial_number = :serial_number,
+                     category_id = :category_id, total_quantity = :total_quantity,
+                     available_quantity = :available_quantity, status = :status
+                 WHERE equipment_id = :id'
+            );
+            $stmt->execute([
+                'name' => $name, 'description' => $description, 'serial_number' => $serialNumber ?: null,
+                'category_id' => $categoryId ?: null, 'total_quantity' => (int)$totalQuantity,
+                'available_quantity' => $available, 'status' => $status, 'id' => $id,
+            ]);
+            $db->commit();
+            sendJson(200, ['success' => true, 'message' => 'Equipment updated.']);
+        } catch (PDOException $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendJson(409, ['success' => false, 'message' => 'Could not update equipment.']);
+        }
         break;
 
     case 'DELETE':

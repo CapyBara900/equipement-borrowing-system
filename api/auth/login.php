@@ -9,7 +9,7 @@ $body = getJsonBody();
 $email    = trim(strtolower(cleanText($body['email'] ?? '')));
 $password = $body['password'] ?? '';
 
-if (strlen($email) > 150 || strlen($password) > 200) {
+if (strlen($email) > 254 || strlen($password) > 200) {
     sendJson(400, ['success' => false, 'message' => 'Email or password is invalid.']);
 }
 

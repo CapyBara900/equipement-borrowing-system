@@ -27,11 +27,23 @@ document.getElementById('toSignIn').addEventListener('click', (e) => {
 
 
 const toggleLoginPassword = document.getElementById('toggleLoginPassword');
-if (toggleLoginPassword) {
+const loginPasswordInput = document.getElementById('loginPassword');
+
+if (toggleLoginPassword && loginPasswordInput) {
+  // Sync the toggle button's disabled state with whether the field has a value.
+  const syncToggle = () => {
+    toggleLoginPassword.disabled = loginPasswordInput.value.length === 0;
+  };
+
+  // Set initial state (field is empty on page load).
+  syncToggle();
+
+  // Update on every keystroke.
+  loginPasswordInput.addEventListener('input', syncToggle);
+
   toggleLoginPassword.addEventListener('click', () => {
-    const input = document.getElementById('loginPassword');
-    const visible = input.type === 'text';
-    input.type = visible ? 'password' : 'text';
+    const visible = loginPasswordInput.type === 'text';
+    loginPasswordInput.type = visible ? 'password' : 'text';
     toggleLoginPassword.textContent = visible ? 'Show' : 'Hide';
     toggleLoginPassword.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
   });
@@ -69,12 +81,51 @@ document.getElementById('signInForm').addEventListener('submit', async (e) => {
 /* ---------- Register ---------- */
 
 const registerRules = {
-  regName: [Rules.required('Full name'), Rules.maxLength(100, 'Full name')],
-  regEmail: [Rules.required('Email'), Rules.email()],
-  regPassword: [Rules.required('Password'), Rules.minLength(8, 'Password'), Rules.maxLength(16, 'Password')],
+  regName: [
+    Rules.required('Full name'),
+    Rules.fullName(),
+  ],
+  regEmail: [
+    Rules.required('Email'),
+    Rules.emailNoSpaces(),
+    Rules.emailMaxLength(),
+    Rules.emailExactlyOneAt(),
+    Rules.emailParts(),
+    Rules.emailStrict(),
+  ],
+  regPassword: [
+    Rules.required('Password'),
+    Rules.passwordMinLength(),
+    Rules.passwordNoSpaces(),
+    Rules.passwordUppercase(),
+    Rules.passwordLowercase(),
+    Rules.passwordNumber(),
+    Rules.passwordSpecial(),
+    Rules.passwordPersonalInfo('regName', 'regEmail'),
+  ],
   regConfirm: [Rules.required('Confirm password'), Rules.matches('regPassword', 'Passwords')],
 };
 liveValidate(registerRules, 'registerBtn');
+
+// Async duplicate-email check on blur (gives immediate feedback before submit).
+document.getElementById('regEmail').addEventListener('blur', async () => {
+  const input = document.getElementById('regEmail');
+  const val = input.value.trim().toLowerCase();
+  if (!val) return; // required rule already handles empty
+  // Only run if the field passes all synchronous rules first.
+  const syncOk = registerRules.regEmail.every(r => r.test(val, input));
+  if (!syncOk) return;
+  try {
+    await Api.register({ __check_email_only: true, email: val });
+  } catch (err) {
+    if (err.status === 409) {
+      showError(input, 'This email address is already associated with an account.');
+      document.getElementById('registerBtn').disabled = true;
+    }
+  }
+});
+
+
 
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault();

@@ -8,6 +8,9 @@
  */
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/response.php';
+require_once __DIR__ . '/../includes/email_validation.php';
+require_once __DIR__ . '/../includes/password_validation.php';
 
 if (php_sapi_name() !== 'cli') {
     http_response_code(403);
@@ -18,6 +21,17 @@ if (php_sapi_name() !== 'cli') {
 
 if (!$name || !$email || !$password) {
     fwrite(STDERR, "Usage: php create_admin.php \"Name\" email@example.com \"Password123\"\n");
+    exit(1);
+}
+
+[$email, $emailError] = normalizeAndValidateEmail($email);
+if ($emailError !== null) {
+    fwrite(STDERR, $emailError . PHP_EOL);
+    exit(1);
+}
+$passwordError = validateNewPassword($password, $name, $email);
+if ($passwordError !== null) {
+    fwrite(STDERR, $passwordError . PHP_EOL);
     exit(1);
 }
 

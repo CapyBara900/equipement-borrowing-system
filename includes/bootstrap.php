@@ -30,6 +30,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/response.php';
+set_exception_handler(function (Throwable $exception): void {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=UTF-8');
+    }
+    echo json_encode([
+        'success' => false,
+        'message' => 'The server could not complete that request.',
+    ]);
+    exit();
+});
 require_once __DIR__ . '/auth_middleware.php';
 require_once __DIR__ . '/notifications.php';
 

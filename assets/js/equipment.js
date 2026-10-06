@@ -9,7 +9,14 @@ let user = null;
 (async function () {
   user = await requireSession();
 
-  if (user.role === 'admin') {
+  if (user.role === 'customer') {
+    ['pending', 'borrowed', 'maintenance'].forEach(status => {
+      const option = document.querySelector(`#statusFilter option[value="${status}"]`);
+      if (option) option.hidden = true;
+    });
+  }
+
+  if (user.role === 'admin' || user.role === 'staff') {
     const addBtn = document.getElementById('addEquipmentBtn');
     addBtn.hidden = false;
     addBtn.addEventListener('click', () => openEditor(null));
@@ -102,19 +109,13 @@ async function loadEquipment() {
 
 function rowMarkup(item) {
   const isCustomer = user.role === 'customer';
-  // Customers receive a server-computed 'status' field:
-  //   'available'   → item is free to request
-  //   'pending'     → this customer's OWN request is pending
-  //   'unavailable' → another customer's request is pending/approved
-  //   'borrowed'    → this customer's approved request (item with them)
-  //   'maintenance' → out for repair
+  // Catalog status is universal: it depends only on available quantity.
   const canBorrow = item.status === 'available' && isCustomer;
   const isAdmin = user.role === 'admin';
   const isDesk = user.role === 'admin' || user.role === 'staff';
 
-  // Admin/staff: show who submitted the pending request (from pending_user_name).
-  // This helps staff act without leaving the equipment page to find the request.
-  const pendingRequesterBadge = isDesk && item.status === 'pending' && item.pending_user_name
+  // Admin/staff can still see the latest pending requester as a convenience.
+  const pendingRequesterBadge = isDesk && item.equipment_status === 'pending' && item.pending_user_name
     ? `<span class="badge bg-warning text-dark ms-2" title="Request #${esc(item.pending_request_id)}">
          Requested by ${esc(item.pending_user_name)}
        </span>`
@@ -129,33 +130,34 @@ function rowMarkup(item) {
           ${pendingRequesterBadge}
           ${item.category_name ? ' · ' + esc(item.category_name) : ''}
           ${item.serial_number ? ' · <span class="serial">' + esc(item.serial_number) + '</span>' : ''}
+          ${isDesk && item.equipment_status && item.equipment_status !== item.status
+            ? ' · condition: ' + esc(item.equipment_status) : ''}
         </div>
+        <div class="meta mt-1">Available: ${esc(item.available_quantity)} of ${esc(item.total_quantity)}</div>
         ${item.description ? `<div class="meta mt-1">${esc(item.description)}</div>` : ''}
       </div>
       <div class="actions">
         ${isCustomer
           ? (canBorrow
               ? `<button class="btn btn-sm btn-primary" data-borrow="${esc(item.equipment_id)}"
-                             data-name="${esc(item.equipment_name)}">Request</button>`
-              : (item.status === 'pending'
-                  ? `<button class="btn btn-sm btn-outline-secondary" disabled>Pending Request</button>`
-                  : `<button class="btn btn-sm btn-outline-secondary" disabled>Unavailable</button>`))
+                             data-name="${esc(item.equipment_name)}" data-available="${esc(item.available_quantity)}">Request</button>`
+              : `<button class="btn btn-sm btn-outline-secondary" disabled>Unavailable</button>`)
           : ''
         }
         ${isDesk && item.serial_number
       ? `<button class="btn btn-sm btn-outline-secondary" data-qr="${esc(item.serial_number)}"
                      data-name="${esc(item.equipment_name)}">Label</button>` : ''}
-        ${isAdmin
+        ${isDesk
       ? `<button class="btn btn-sm btn-outline-secondary" data-edit="${esc(item.equipment_id)}">Edit</button>
-             <button class="btn btn-sm btn-outline-danger" data-delete="${esc(item.equipment_id)}"
-                     data-name="${esc(item.equipment_name)}">Delete</button>` : ''}
+             ${isAdmin ? `<button class="btn btn-sm btn-outline-danger" data-delete="${esc(item.equipment_id)}"
+                     data-name="${esc(item.equipment_name)}">Delete</button>` : ''}` : ''}
       </div>
     </article>`;
 }
 
 function bindRowActions() {
   document.querySelectorAll('[data-borrow]').forEach(btn => {
-    btn.addEventListener('click', () => openBorrow(btn.dataset.borrow, btn.dataset.name));
+    btn.addEventListener('click',     () => openBorrow(btn.dataset.borrow, btn.dataset.name, btn.dataset.available));
   });
   document.querySelectorAll('[data-qr]').forEach(btn => {
     btn.addEventListener('click', () => showQr(btn.dataset.qr, btn.dataset.name));
@@ -181,12 +183,20 @@ const borrowRules = {
     Rules.required('Return date'),
     Rules.onOrAfterField('borrowDate', 'Return date')
   ],
+  borrowQuantity: [{
+    test: v => /^[1-9]\d*$/.test(v) && Number(v) <= Number(document.getElementById('borrowQuantity').max || 0),
+    message: 'Enter a positive whole number that does not exceed the available quantity.',
+  }],
 };
 const syncBorrowButton = liveValidate(borrowRules, 'borrowSubmit');
 
-function openBorrow(equipmentId, name) {
+function openBorrow(equipmentId, name, available) {
   document.getElementById('borrowEquipmentId').value = equipmentId;
   document.getElementById('borrowItemName').textContent = name;
+  const quantity = document.getElementById('borrowQuantity');
+  quantity.value = '1';
+  quantity.max = available;
+  document.getElementById('borrowAvailability').textContent = `Available: ${available}`;
 
   const today = new Date().toISOString().split('T')[0];
   const inAWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
@@ -200,6 +210,7 @@ function openBorrow(equipmentId, name) {
   returnDate.min = today;
   clearError(borrowDate);
   clearError(returnDate);
+  clearError(quantity);
   syncBorrowButton();
 
   borrowModal().show();
@@ -233,6 +244,7 @@ document.getElementById('borrowForm').addEventListener('submit', async (e) => {
       equipment_id: document.getElementById('borrowEquipmentId').value,
       borrow_date: document.getElementById('borrowDate').value,
       expected_return_date: document.getElementById('expectedReturnDate').value,
+      requested_quantity: document.getElementById('borrowQuantity').value,
     });
     borrowModal().hide();
     toast('Request sent. Staff will review it shortly.');
@@ -250,6 +262,10 @@ document.getElementById('borrowForm').addEventListener('submit', async (e) => {
 const editModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal'));
 
 const editRules = {
+  editTotalQuantity: [{
+    test: v => /^[1-9]\d*$/.test(v),
+    message: 'Total quantity must be a positive whole number.',
+  }],
   editName: [Rules.required('Name'), Rules.maxLength(150, 'Name')],
   editSerial: [Rules.maxLength(100, 'Serial number')],
   editDescription: [Rules.maxLength(500, 'Description')],
@@ -260,13 +276,14 @@ async function openEditor(equipmentId) {
   document.getElementById('editTitle').textContent = equipmentId ? 'Edit equipment' : 'Add equipment';
   document.getElementById('editId').value = equipmentId || '';
 
-  ['editName', 'editSerial', 'editDescription'].forEach(id => {
+  ['editName', 'editSerial', 'editDescription', 'editTotalQuantity'].forEach(id => {
     const el = document.getElementById(id);
     el.value = '';
     clearError(el);
   });
   document.getElementById('editCategory').value = '';
   document.getElementById('editStatus').value = 'available';
+  document.getElementById('editTotalQuantity').value = '1';
 
   if (equipmentId) {
     try {
@@ -275,7 +292,8 @@ async function openEditor(equipmentId) {
       document.getElementById('editSerial').value = data.serial_number || '';
       document.getElementById('editDescription').value = data.description || '';
       document.getElementById('editCategory').value = data.category_id || '';
-      document.getElementById('editStatus').value = data.status || 'available';
+      document.getElementById('editStatus').value = data.equipment_status || data.status || 'available';
+      document.getElementById('editTotalQuantity').value = data.total_quantity || 1;
     } catch (err) {
       toast(err.message, 'bad');
       return;
@@ -296,6 +314,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
     description: document.getElementById('editDescription').value.trim(),
     category_id: document.getElementById('editCategory').value || null,
     status: document.getElementById('editStatus').value,
+    total_quantity: document.getElementById('editTotalQuantity').value,
   };
 
   const btn = document.getElementById('editSubmit');

@@ -104,8 +104,17 @@ const userModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementB
 
 const userRules = {
   userName: [Rules.required('Full name'), Rules.maxLength(100, 'Full name')],
-  userEmail: [Rules.required('Email'), Rules.email()],
-  userPassword: [Rules.required('Temporary password'), Rules.minLength(8, 'Password')],
+  userEmail: [Rules.required('Email'), Rules.emailNoSpaces(), Rules.emailMaxLength(), Rules.emailStrict()],
+  userPassword: [
+    Rules.required('Temporary password'),
+    Rules.passwordMinLength(),
+    Rules.passwordNoSpaces(),
+    Rules.passwordUppercase(),
+    Rules.passwordLowercase(),
+    Rules.passwordNumber(),
+    Rules.passwordSpecial(),
+    Rules.passwordPersonalInfo('userName', 'userEmail'),
+  ],
 };
 
 function openUserModal() {

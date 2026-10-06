@@ -5,7 +5,7 @@ const RETURN_SELECT = '
     SELECT ret.return_id, ret.actual_return_date, ret.remarks,
            ret.processed_by_staff_id, staff.name AS processed_by_name,
            r.request_id, r.user_id, u.name AS user_name,
-           r.equipment_id, e.equipment_name
+           r.equipment_id, r.requested_quantity, e.equipment_name
     FROM returns ret
     JOIN borrowing_requests r ON r.request_id = ret.request_id
     JOIN users u ON u.user_id = r.user_id
@@ -18,9 +18,13 @@ $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
 
     case 'GET':
-        requireRole(['admin', 'staff']);
-        $stmt = $db->query(RETURN_SELECT . ' ORDER BY ret.actual_return_date DESC');
-        sendJson(200, ['success' => true, 'data' => $stmt->fetchAll()]);
+        try {
+            requireRole(['admin', 'staff']);
+            $stmt = $db->query(RETURN_SELECT . ' ORDER BY ret.actual_return_date DESC');
+            sendJson(200, ['success' => true, 'data' => $stmt->fetchAll()]);
+        } catch (PDOException $e) {
+            sendJson(500, ['success' => false, 'message' => 'Could not load current loans and returns. Please try again.']);
+        }
         break;
 
     case 'POST':
@@ -58,9 +62,13 @@ switch ($method) {
             }
 
             $insert = $db->prepare(
-                'INSERT INTO returns (request_id, processed_by_staff_id, remarks) VALUES (:request_id, :staff_id, :remarks)'
+                'INSERT INTO returns (request_id, processed_by_staff_id, returned_quantity, remarks)
+                 VALUES (:request_id, :staff_id, :returned_quantity, :remarks)'
             );
-            $insert->execute(['request_id' => $requestId, 'staff_id' => $staff['user_id'], 'remarks' => $remarks]);
+            $insert->execute([
+                'request_id' => $requestId, 'staff_id' => $staff['user_id'],
+                'returned_quantity' => (int)$req['requested_quantity'], 'remarks' => $remarks,
+            ]);
             $newReturnId = (int)$db->lastInsertId();
 
             $db->prepare('UPDATE borrowing_requests SET status = :status WHERE request_id = :id')
@@ -78,9 +86,17 @@ switch ($method) {
                 'notes'            => $remarks,
             ]);
 
-            $newEquipmentStatus = ($condition === 'good') ? 'available' : 'maintenance';
-            $db->prepare('UPDATE equipment SET status = :status WHERE equipment_id = :id')
-               ->execute(['status' => $newEquipmentStatus, 'id' => $req['equipment_id']]);
+            if ($condition === 'good') {
+                $db->prepare(
+                    'UPDATE equipment
+                     SET available_quantity = LEAST(total_quantity, available_quantity + :quantity),
+                         status = "available"
+                     WHERE equipment_id = :id'
+                )->execute(['quantity' => (int)$req['requested_quantity'], 'id' => $req['equipment_id']]);
+            } else {
+                $db->prepare('UPDATE equipment SET status = "maintenance" WHERE equipment_id = :id')
+                   ->execute(['id' => $req['equipment_id']]);
+            }
 
             notifyUser($db, (int)$req['user_id'], "Your returned item for request #{$requestId} has been processed.");
 

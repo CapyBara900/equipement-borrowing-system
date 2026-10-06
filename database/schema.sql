@@ -31,7 +31,7 @@ CREATE TABLE users (
     user_id        INT AUTO_INCREMENT PRIMARY KEY,
     role_id        INT NOT NULL,
     name           VARCHAR(100) NOT NULL,
-    email          VARCHAR(150) NOT NULL UNIQUE,
+    email          VARCHAR(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
     password_hash  VARCHAR(255) NOT NULL,        -- bcrypt hash, never plain text
     failed_login_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
     locked_until   DATETIME NULL,
@@ -58,10 +58,13 @@ CREATE TABLE equipment (
     description    TEXT,
     serial_number  VARCHAR(100) UNIQUE,
     category_id    INT NULL,
+    total_quantity  INT UNSIGNED NOT NULL DEFAULT 1,
+    available_quantity INT UNSIGNED NOT NULL DEFAULT 1,
     status         ENUM('available', 'borrowed', 'maintenance', 'pending') NOT NULL DEFAULT 'available',
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_equipment_category FOREIGN KEY (category_id)
-        REFERENCES categories(category_id) ON DELETE SET NULL
+        REFERENCES categories(category_id) ON DELETE SET NULL,
+    CONSTRAINT chk_equipment_quantities CHECK (available_quantity <= total_quantity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -74,11 +77,13 @@ CREATE TABLE borrowing_requests (
     request_date          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     borrow_date           DATE,
     expected_return_date  DATE,
+    requested_quantity    INT UNSIGNED NOT NULL DEFAULT 1,
     status                ENUM('pending', 'approved', 'rejected', 'returned') NOT NULL DEFAULT 'pending',
     CONSTRAINT fk_request_user FOREIGN KEY (user_id)
         REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_request_equipment FOREIGN KEY (equipment_id)
-        REFERENCES equipment(equipment_id) ON DELETE CASCADE
+        REFERENCES equipment(equipment_id) ON DELETE CASCADE,
+    CONSTRAINT chk_request_quantity_positive CHECK (requested_quantity >= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -89,11 +94,13 @@ CREATE TABLE returns (
     request_id            INT NOT NULL UNIQUE,
     processed_by_staff_id INT NULL,
     actual_return_date    DATE NOT NULL DEFAULT (CURRENT_DATE),
+    returned_quantity     INT UNSIGNED NOT NULL DEFAULT 1,
     remarks               TEXT,
     CONSTRAINT fk_return_request FOREIGN KEY (request_id)
         REFERENCES borrowing_requests(request_id) ON DELETE CASCADE,
     CONSTRAINT fk_return_staff FOREIGN KEY (processed_by_staff_id)
-        REFERENCES users(user_id) ON DELETE SET NULL
+        REFERENCES users(user_id) ON DELETE SET NULL,
+    CONSTRAINT chk_return_quantity_positive CHECK (returned_quantity >= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------

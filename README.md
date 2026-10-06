@@ -10,6 +10,14 @@ Plain PHP (PDO) backend on **MySQL**, built for XAMPP + phpMyAdmin.
    `database/schema.sql`, and run it. This creates all 8 tables (`roles`,
    `users`, `categories`, `equipment`, `borrowing_requests`, `returns`,
    `equipment_condition_reports`, `notifications`) plus seed data.
+   If upgrading an existing database, run `database/migration_email_validation.sql`
+   to expand the email column to 254 characters and apply the case-insensitive
+   collation used for normalized email uniqueness.
+   Run `database/migration_equipment_quantities.sql` as well when upgrading an
+   existing database; it adds total/available inventory and request/return
+   quantities. The migration also repairs available stock from active pending
+   and approved requests, rather than treating the legacy equipment status as
+   a quantity.
 
 ## 2. Configure the PHP app
 1. Copy `.env.example` to `.env` in the project root.
@@ -121,7 +129,7 @@ reloads a second time to get data.
 4. **AJAX / fetch** — `assets/js/api.js` wraps all calls; approving a request,
    checking in equipment, filtering, and paging all update in place.
 5. **Form validation** — `validate()` / `Rules` in `assets/js/app.js`. Covers
-   required fields, email format, min/max length, password confirmation, and
+   required fields, email format, strong password requirements, password confirmation, and
    date logic (no past pick-up date; return must come after pick-up). Errors
    appear inline per field and also fire on blur.
 6. **Search / filter** — equipment.html (keyword + category + status + sort +

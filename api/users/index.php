@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/email_validation.php';
+require_once __DIR__ . '/../../includes/password_validation.php';
 
 const USER_SELECT = '
     SELECT u.user_id, u.name, u.email, r.role_name AS role, u.created_at,
@@ -30,21 +32,22 @@ switch ($method) {
         requireRole(['admin']);
         $body = getJsonBody();
         $name     = cleanText($body['name'] ?? '');
-        $email    = trim(strtolower(cleanText($body['email'] ?? '')));
+        [$email, $emailError] = normalizeAndValidateEmail($body['email'] ?? '');
         $password = $body['password'] ?? '';
         $roleName = $body['role'] ?? 'staff';
 
         if ($name === '' || $email === '' || $password === '') {
             sendJson(400, ['success' => false, 'message' => 'name, email, and password are required.']);
         }
-        if (strlen($name) > 100 || strlen($email) > 150 || strlen($password) > 200) {
+        if ($emailError !== null) {
+            sendJson(400, ['success' => false, 'message' => $emailError]);
+        }
+        if (strlen($name) > 100) {
             sendJson(400, ['success' => false, 'message' => 'Name, email, or password is too long.']);
         }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            sendJson(400, ['success' => false, 'message' => 'Invalid email address.']);
-        }
-        if (strlen($password) < 8) {
-            sendJson(400, ['success' => false, 'message' => 'Password must be at least 8 characters.']);
+        $passwordError = validateNewPassword($password, $name, $email);
+        if ($passwordError !== null) {
+            sendJson(400, ['success' => false, 'message' => $passwordError]);
         }
         $roleId = findRoleId($db, $roleName);
         if (!$roleId) {
@@ -64,6 +67,9 @@ switch ($method) {
             $newId = (int)$db->lastInsertId();
             sendJson(201, ['success' => true, 'data' => ['user_id' => $newId, 'name' => $name, 'email' => $email, 'role' => $roleName]]);
         } catch (PDOException $e) {
+            if ($e->getCode() === '23000') {
+                sendJson(409, ['success' => false, 'message' => 'This email address is already associated with an account.']);
+            }
             sendJson(409, ['success' => false, 'message' => 'Could not create user (email may already exist).']);
         }
         break;

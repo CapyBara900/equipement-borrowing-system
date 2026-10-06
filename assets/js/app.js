@@ -145,7 +145,7 @@ function validate(rules) {
     const input = document.getElementById(id);
     if (!input) return;
     clearError(input);
-    const value = input.value.trim();
+    const value = validationValue(input);
 
     for (const check of checks) {
       if (!check.test(value, input)) {
@@ -178,6 +178,44 @@ const Rules = {
     test: v => v.length <= n,
     message: `${label} must be ${n} characters or fewer.`,
   }),
+  passwordMinLength: () => ({
+    test: v => v.length >= 12,
+    message: 'Password must be at least 12 characters.',
+  }),
+  passwordNoSpaces: () => ({
+    test: v => !/\s/.test(v),
+    message: 'Password must not contain spaces.',
+  }),
+  passwordUppercase: () => ({
+    test: v => /[A-Z]/.test(v),
+    message: 'Password must contain at least one uppercase letter.',
+  }),
+  passwordLowercase: () => ({
+    test: v => /[a-z]/.test(v),
+    message: 'Password must contain at least one lowercase letter.',
+  }),
+  passwordNumber: () => ({
+    test: v => /[0-9]/.test(v),
+    message: 'Password must contain at least one number.',
+  }),
+  passwordSpecial: () => ({
+    test: v => /[!@#$%^&*]/.test(v),
+    message: 'Password must contain at least one special character (!, @, #, $, %, ^, &, or *).',
+  }),
+  passwordPersonalInfo: (nameId, emailId) => ({
+    test: v => {
+      const password = v.toLowerCase();
+      const name = document.getElementById(nameId).value.toLowerCase();
+      const email = document.getElementById(emailId).value.trim().toLowerCase();
+      const localPart = email.split('@')[0];
+      const nameParts = name.split(/[^a-z0-9]+/).filter(part => part.length >= 3);
+      const nameWithoutSeparators = name.replace(/[^a-z0-9]+/g, '');
+      return ![email, localPart, nameWithoutSeparators, ...nameParts]
+        .filter(value => value.length >= 3)
+        .some(value => password.includes(value));
+    },
+    message: 'Password must not contain your name, username, or email address.',
+  }),
   matches: (otherId, label) => ({
     test: v => v === document.getElementById(otherId).value,
     message: `${label} do not match.`,
@@ -192,6 +230,64 @@ const Rules = {
   onOrAfterField: (otherId, label) => ({
   test: v => new Date(v) >= new Date(document.getElementById(otherId).value),
   message: `${label} must be the same as or after the pick up date.`,
+  }),
+
+  // --- Registration-specific rules ---
+
+  /**
+   * Full name: 5–100 chars; letters (including accented), spaces, hyphens,
+   * apostrophes, and periods only; no consecutive spaces; no repeated specials.
+   */
+  fullName: () => ({
+    test: v => {
+      if (v.length < 5 || v.length > 100) return false;
+      if (!/^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF '\-.]+$/.test(v)) return false;
+      if (/  /.test(v)) return false;          // consecutive spaces
+      if (/--|''|\.\./.test(v)) return false;  // repeated specials
+      return true;
+    },
+    message: "Full name must be 5\u2013100 characters and may only contain letters, spaces, hyphens (-), apostrophes ('), and periods (.). No consecutive spaces or repeated special characters.",
+  }),
+
+  /** Email must not contain spaces. */
+  emailNoSpaces: () => ({
+    test: v => !/\s/.test(v),
+    message: 'Email address must not contain spaces.',
+  }),
+
+  /** Strict email format: exactly one @, non-empty local and domain parts,
+   *  domain extension of at least 2 characters. */
+  emailStrict: () => ({
+    test: v => {
+      const atCount = (v.match(/@/g) || []).length;
+      if (atCount !== 1) return false;
+      const [local, domain] = v.split('@');
+      if (!local || !domain || local.startsWith('.') || local.endsWith('.') || local.includes('..')) return false;
+      if (!/^[A-Za-z0-9._+-]+$/.test(local)) return false;
+      if (domain.startsWith('.') || domain.endsWith('.') || domain.startsWith('-') || domain.endsWith('-') || domain.includes('..')) return false;
+      const labels = domain.split('.');
+      return labels.length >= 2
+        && labels.every(label => /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(label))
+        && /^[A-Za-z]{2,63}$/.test(labels[labels.length - 1]);
+    },
+    message: 'Enter a valid email address, like name@domain.com.',
+  }),
+
+  /** RFC 5321 maximum email length. */
+  emailMaxLength: () => ({
+    test: v => v.length <= 254,
+    message: 'Email address must be 254 characters or fewer.',
+  }),
+  emailExactlyOneAt: () => ({
+    test: v => (v.match(/@/g) || []).length === 1,
+    message: 'Email address must contain exactly one @ symbol.',
+  }),
+  emailParts: () => ({
+    test: v => {
+      const [local, domain] = v.split('@');
+      return Boolean(local && domain);
+    },
+    message: 'Email address must include a username before @ and a domain after it.',
   }),
 };
 
@@ -209,7 +305,7 @@ function liveValidate(rules, buttonId = null) {
     if (!input) return;
 
     const checkField = (showMessage) => {
-      const value = input.value.trim();
+      const value = validationValue(input);
       if (showMessage) clearError(input);
       for (const check of rules[id]) {
         if (!check.test(value, input)) {
@@ -241,9 +337,13 @@ function formIsValid(rules) {
   return Object.entries(rules).every(([id, checks]) => {
     const input = document.getElementById(id);
     if (!input) return true;
-    const value = input.value.trim();
+    const value = validationValue(input);
     return checks.every(check => check.test(value, input));
   });
+}
+
+function validationValue(input) {
+  return input.type === 'password' ? input.value : input.value.trim();
 }
 
 /* ---------- Small formatters ---------------------------------------------- */

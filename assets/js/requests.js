@@ -108,6 +108,7 @@ function rowMarkup(r) {
           · <span class="refid">#${esc(r.request_id)}</span>
           ${isDesk ? ' · ' + esc(r.user_name) : ''}
         </div>
+        <div class="meta mt-1">Quantity: ${esc(r.requested_quantity)}</div>
         <div class="meta mt-1">
           Requested ${fmtDate(r.request_date)}
           · pick up ${fmtDate(r.borrow_date)}

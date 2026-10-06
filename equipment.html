@@ -50,6 +50,7 @@
             <select class="form-select" id="statusFilter">
               <option value="">Any</option>
               <option value="available">Available</option>
+              <option value="unavailable">Unavailable</option>
               <option value="pending">Pending</option>
               <option value="borrowed">Borrowed</option>
               <option value="maintenance">Repair</option>
@@ -95,6 +96,12 @@
           <p class="mb-3" id="borrowItemName" style="font-weight:600"></p>
           <input type="hidden" id="borrowEquipmentId">
           <div class="mb-3">
+            <label class="form-label" for="borrowQuantity">Quantity</label>
+            <input class="form-control" type="number" id="borrowQuantity" min="1" step="1" required>
+            <div class="form-text" id="borrowAvailability"></div>
+            <div class="field-error" data-error-for="borrowQuantity"></div>
+          </div>
+          <div class="mb-3">
             <label class="form-label" for="borrowDate">Pick up on</label>
             <input class="form-control" type="date" id="borrowDate" required>
             <div class="field-error" data-error-for="borrowDate"></div>
@@ -125,6 +132,11 @@
       <form id="editForm" novalidate>
         <div class="modal-body">
           <input type="hidden" id="editId">
+          <div class="mb-3">
+            <label class="form-label" for="editTotalQuantity">Total quantity</label>
+            <input class="form-control" type="number" id="editTotalQuantity" min="1" step="1" required>
+            <div class="field-error" data-error-for="editTotalQuantity"></div>
+          </div>
           <div class="mb-3">
             <label class="form-label" for="editName">Name</label>
             <input class="form-control" type="text" id="editName" required>
