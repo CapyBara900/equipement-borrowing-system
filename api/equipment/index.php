@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../includes/bootstrap.php';
 
 const EQUIPMENT_SELECT = '
     SELECT e.equipment_id, e.equipment_name, e.description, e.serial_number, e.status,
-           e.category_id, e.total_quantity, e.available_quantity, c.category_name, e.created_at
+           e.category_id, e.total_quantity, e.available_quantity, e.borrowing_time_limit_days, c.category_name, e.created_at
     FROM equipment e
     LEFT JOIN categories c ON c.category_id = e.category_id
 ';
@@ -37,7 +37,7 @@ switch ($method) {
                            WHEN e.available_quantity > 0 THEN 'available'
                            ELSE 'unavailable'
                        END AS status,
-                       e.category_id, e.total_quantity, e.available_quantity,
+                       e.category_id, e.total_quantity, e.available_quantity, e.borrowing_time_limit_days,
                        c.category_name, e.created_at
                 FROM equipment e
                 LEFT JOIN categories c ON c.category_id = e.category_id
@@ -51,7 +51,7 @@ switch ($method) {
                        e.serial_number,
                        CASE WHEN e.available_quantity > 0 THEN 'available' ELSE 'unavailable' END AS status,
                        e.status AS equipment_status,
-                       e.total_quantity, e.available_quantity,
+                       e.total_quantity, e.available_quantity, e.borrowing_time_limit_days,
                        br.request_id  AS pending_request_id,
                        br.user_id     AS pending_user_id,
                        u_req.name     AS pending_user_name,
@@ -135,6 +135,10 @@ switch ($method) {
         $serialNumber = cleanText($body['serial_number'] ?? '');
         $categoryId = $body['category_id'] ?? null;
         $status = $body['status'] ?? 'available';
+        $borrowingLimit = $body['borrowing_time_limit_days'] ?? null;
+        if ((!is_int($borrowingLimit) && (!is_string($borrowingLimit) || !ctype_digit($borrowingLimit))) || (int)$borrowingLimit < 1 || (int)$borrowingLimit > 3650) {
+            sendJson(400, ['success' => false, 'message' => 'Borrowing time limit must be a whole number between 1 and 3650 days.']);
+        }
         $totalQuantity = $body['total_quantity'] ?? null;
         if ($name === '') {
             sendJson(400, ['success' => false, 'message' => 'equipment_name is required.']);
@@ -150,10 +154,11 @@ switch ($method) {
         }
         try {
             $stmt = $db->prepare(
-                'INSERT INTO equipment (equipment_name, description, serial_number, category_id, total_quantity, available_quantity, status)
-                 VALUES (:name, :description, :serial_number, :category_id, :total_quantity, :available_quantity, :status)'
+                'INSERT INTO equipment (equipment_name, description, serial_number, category_id, total_quantity, available_quantity, borrowing_time_limit_days, status)
+                 VALUES (:name, :description, :serial_number, :category_id, :total_quantity, :available_quantity, :borrowing_time_limit_days, :status)'
             );
             $stmt->execute([
+                'borrowing_time_limit_days' => (int)$borrowingLimit,
                 'name'          => $name,
                 'description'   => $description,
                 'serial_number' => $serialNumber ?: null,
@@ -182,6 +187,10 @@ switch ($method) {
         $serialNumber = cleanText($body['serial_number'] ?? '');
         $categoryId = $body['category_id'] ?? null;
         $status = $body['status'] ?? 'available';
+        $borrowingLimit = $body['borrowing_time_limit_days'] ?? null;
+        if ((!is_int($borrowingLimit) && (!is_string($borrowingLimit) || !ctype_digit($borrowingLimit))) || (int)$borrowingLimit < 1 || (int)$borrowingLimit > 3650) {
+            sendJson(400, ['success' => false, 'message' => 'Borrowing time limit must be a whole number between 1 and 3650 days.']);
+        }
         $totalQuantity = $body['total_quantity'] ?? null;
         if ($name === '') {
             sendJson(400, ['success' => false, 'message' => 'equipment_name is required.']);
@@ -227,10 +236,11 @@ switch ($method) {
                 'UPDATE equipment
                  SET equipment_name = :name, description = :description, serial_number = :serial_number,
                      category_id = :category_id, total_quantity = :total_quantity,
-                     available_quantity = :available_quantity, status = :status
+                     available_quantity = :available_quantity, borrowing_time_limit_days = :borrowing_time_limit_days, status = :status
                  WHERE equipment_id = :id'
             );
             $stmt->execute([
+                'borrowing_time_limit_days' => (int)$borrowingLimit,
                 'name' => $name, 'description' => $description, 'serial_number' => $serialNumber ?: null,
                 'category_id' => $categoryId ?: null, 'total_quantity' => (int)$totalQuantity,
                 'available_quantity' => $available, 'status' => $status, 'id' => $id,

@@ -60,10 +60,12 @@ CREATE TABLE equipment (
     category_id    INT NULL,
     total_quantity  INT UNSIGNED NOT NULL DEFAULT 1,
     available_quantity INT UNSIGNED NOT NULL DEFAULT 1,
+    borrowing_time_limit_days INT UNSIGNED NOT NULL DEFAULT 7,
     status         ENUM('available', 'borrowed', 'maintenance', 'pending') NOT NULL DEFAULT 'available',
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_equipment_category FOREIGN KEY (category_id)
         REFERENCES categories(category_id) ON DELETE SET NULL,
+    CONSTRAINT chk_equipment_borrowing_limit CHECK (borrowing_time_limit_days BETWEEN 1 AND 3650),
     CONSTRAINT chk_equipment_quantities CHECK (available_quantity <= total_quantity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

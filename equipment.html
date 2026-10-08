@@ -133,7 +133,10 @@
         <div class="modal-body">
           <input type="hidden" id="editId">
           <div class="mb-3">
-            <label class="form-label" for="editTotalQuantity">Total quantity</label>
+            <label class="form-label" for="editBorrowingLimit">Borrowing time limit (days)</label>
+            <input class="form-control" type="number" id="editBorrowingLimit" min="1" max="3650" step="1" required>
+            <div class="field-error" data-error-for="editBorrowingLimit"></div>
+            <label class="form-label mt-3" for="editTotalQuantity">Total quantity</label>
             <input class="form-control" type="number" id="editTotalQuantity" min="1" step="1" required>
             <div class="field-error" data-error-for="editTotalQuantity"></div>
           </div>
@@ -191,8 +194,8 @@
 <div id="toastZone"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/api.js"></script>
+<script src="assets/js/api.js?v=20261008-pickup"></script>
 <script src="assets/js/app.js"></script>
-<script src="assets/js/equipment.js"></script>
+<script src="assets/js/equipment.js?v=20261008-pickup-clean"></script>
 </body>
 </html>

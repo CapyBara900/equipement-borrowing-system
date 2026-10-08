@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/borrowing_dates.php';
 
 const REQUEST_SELECT = '
     SELECT r.request_id, r.request_date, r.borrow_date, r.expected_return_date, r.requested_quantity, r.status,
@@ -86,15 +87,19 @@ switch ($method) {
         if (filter_var($requestedQuantity, FILTER_VALIDATE_INT) === false || (int)$requestedQuantity < 1) {
             sendJson(400, ['success' => false, 'message' => 'requested_quantity must be a positive whole number.']);
         }
-        $borrowDateObj = DateTime::createFromFormat('!Y-m-d', $borrowDate);
-        $returnDateObj = DateTime::createFromFormat('!Y-m-d', $expectedReturnDate);
-        $today = new DateTime('today');
+        if (!is_string($borrowDate) || !is_string($expectedReturnDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $borrowDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $expectedReturnDate)) {
+            sendJson(400, ['success' => false, 'message' => 'Please enter valid dates.']);
+        }
+        $timezone = borrowingTimezone();
+        $borrowDateObj = DateTime::createFromFormat('!Y-m-d', $borrowDate, $timezone);
+        $returnDateObj = DateTime::createFromFormat('!Y-m-d', $expectedReturnDate, $timezone);
+        $pickupWindow = pickupDateWindow();
         if (!$borrowDateObj || $borrowDateObj->format('Y-m-d') !== $borrowDate ||
             !$returnDateObj || $returnDateObj->format('Y-m-d') !== $expectedReturnDate) {
             sendJson(400, ['success' => false, 'message' => 'Please enter valid dates.']);
         }
-        if ($borrowDateObj < $today) {
-            sendJson(400, ['success' => false, 'message' => 'Pick up date cannot be in the past.']);
+        if ($borrowDate < $pickupWindow['min_date'] || $borrowDate > $pickupWindow['max_date']) {
+            sendJson(400, ['success' => false, 'message' => 'Pick up date must be between ' . $pickupWindow['min_date'] . ' and ' . $pickupWindow['max_date'] . ' (today through 7 calendar days in advance).']);
         }
         if ($returnDateObj < $borrowDateObj) {
             sendJson(400, ['success' => false, 'message' => 'Return date cannot be before the pick up date.']);
@@ -104,13 +109,19 @@ switch ($method) {
             $db->beginTransaction();
 
             // Lock the equipment row so two people can't grab it at once.
-            $check = $db->prepare('SELECT status, total_quantity, available_quantity FROM equipment WHERE equipment_id = :id FOR UPDATE');
+            $check = $db->prepare('SELECT status, total_quantity, available_quantity, borrowing_time_limit_days FROM equipment WHERE equipment_id = :id FOR UPDATE');
             $check->execute(['id' => $equipmentId]);
             $equipment = $check->fetch();
 
             if (!$equipment) {
                 $db->rollBack();
                 sendJson(404, ['success' => false, 'message' => 'Equipment not found.']);
+            }
+            $limitDays = (int)$equipment['borrowing_time_limit_days'];
+            $maximumReturn = (clone $borrowDateObj)->modify("+{$limitDays} days");
+            if ($returnDateObj > $maximumReturn) {
+                $db->rollBack();
+                sendJson(400, ['success' => false, 'message' => "Borrowing time limit is {$limitDays} days. Return by " . $maximumReturn->format('Y-m-d') . ' for the selected pick up date.']);
             }
             if ((int)$equipment['available_quantity'] < (int)$requestedQuantity) {
                 $db->rollBack();

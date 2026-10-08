@@ -71,6 +71,7 @@ const Api = {
   deleteCategory: (id) => request('categories/index.php', { method: 'DELETE', query: { id } }),
 
   // --- borrowing ---
+  getPickupWindow: () => request('borrowing-settings/index.php'),
   listRequests: (q) => request('requests/index.php', { query: q }),
   createRequest: (d) => request('requests/index.php', { method: 'POST', body: d }),
   decideRequest: (d) => request('requests/index.php', { method: 'PUT', body: d }),

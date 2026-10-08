@@ -19,10 +19,23 @@ Plain PHP (PDO) backend on **MySQL**, built for XAMPP + phpMyAdmin.
    and approved requests, rather than treating the legacy equipment status as
    a quantity.
 
+   Run `database/migration_borrowing_time_limit.sql` once for existing databases
+   before using the updated app. Existing equipment defaults to a 7-day limit.
+   Admin and staff can set 1–3650 days when adding or editing equipment.
+   The latest return date is pickup date plus that many calendar days (inclusive);
+   same-day returns are allowed. Changes apply to new requests; existing requests
+   keep their agreed dates.
+
 ## 2. Configure the PHP app
 1. Copy `.env.example` to `.env` in the project root.
 2. The defaults match a fresh XAMPP install (`root` user, no password). Only
    change `DB_NAME` if you named the database something else.
+
+Pickup dates default to today and allow today through seven calendar days in
+advance, inclusive. Set `APP_TIMEZONE` in `.env` to an IANA timezone (default:
+`Asia/Manila`). The customer calendar receives its bounds from the server, and
+the request API enforces the same local-date window before reserving stock.
+Return dates still use the selected pickup date plus the equipment limit.
 
 ## 3. Create the first admin account
 ```

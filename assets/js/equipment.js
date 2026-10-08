@@ -133,14 +133,14 @@ function rowMarkup(item) {
           ${isDesk && item.equipment_status && item.equipment_status !== item.status
             ? ' · condition: ' + esc(item.equipment_status) : ''}
         </div>
-        <div class="meta mt-1">Available: ${esc(item.available_quantity)} of ${esc(item.total_quantity)}</div>
+        <div class="meta mt-1">Available: ${esc(item.available_quantity)} of ${esc(item.total_quantity)} · Borrowing time limit: ${esc(item.borrowing_time_limit_days)} days</div>
         ${item.description ? `<div class="meta mt-1">${esc(item.description)}</div>` : ''}
       </div>
       <div class="actions">
         ${isCustomer
           ? (canBorrow
               ? `<button class="btn btn-sm btn-primary" data-borrow="${esc(item.equipment_id)}"
-                             data-name="${esc(item.equipment_name)}" data-available="${esc(item.available_quantity)}">Request</button>`
+                             data-name="${esc(item.equipment_name)}" data-limit="${esc(item.borrowing_time_limit_days)}" data-available="${esc(item.available_quantity)}">Request</button>`
               : `<button class="btn btn-sm btn-outline-secondary" disabled>Unavailable</button>`)
           : ''
         }
@@ -157,7 +157,7 @@ function rowMarkup(item) {
 
 function bindRowActions() {
   document.querySelectorAll('[data-borrow]').forEach(btn => {
-    btn.addEventListener('click',     () => openBorrow(btn.dataset.borrow, btn.dataset.name, btn.dataset.available));
+    btn.addEventListener('click',     () => openBorrow(btn.dataset.borrow, btn.dataset.name, btn.dataset.available, btn.dataset.limit));
   });
   document.querySelectorAll('[data-qr]').forEach(btn => {
     btn.addEventListener('click', () => showQr(btn.dataset.qr, btn.dataset.name));
@@ -174,14 +174,20 @@ function bindRowActions() {
 
 const borrowModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('borrowModal'));
 
+let borrowingLimitDays = 7;
+let pickupWindow = null;
+
 const borrowRules = {
   borrowDate: [
     Rules.required('Pick up date'),
-    Rules.notPastDate('Pick up date')
+    { test: v => !!pickupWindow && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(v) && v >= pickupWindow.min_date && v <= pickupWindow.max_date,
+      message: 'Pick up date must be between today and 7 calendar days in advance.' }
   ],
   expectedReturnDate: [
     Rules.required('Return date'),
-    Rules.onOrAfterField('borrowDate', 'Return date')
+    Rules.onOrAfterField('borrowDate', 'Return date'),
+    { test: v => !!document.getElementById('expectedReturnDate').max && v <= document.getElementById('expectedReturnDate').max,
+      message: 'Return date exceeds the borrowing time limit. Choose a date within the equipment\'s borrowing time limit.' }
   ],
   borrowQuantity: [{
     test: v => /^[1-9]\d*$/.test(v) && Number(v) <= Number(document.getElementById('borrowQuantity').max || 0),
@@ -190,7 +196,7 @@ const borrowRules = {
 };
 const syncBorrowButton = liveValidate(borrowRules, 'borrowSubmit');
 
-function openBorrow(equipmentId, name, available) {
+async function openBorrow(equipmentId, name, available, limitDays) {
   document.getElementById('borrowEquipmentId').value = equipmentId;
   document.getElementById('borrowItemName').textContent = name;
   const quantity = document.getElementById('borrowQuantity');
@@ -198,15 +204,24 @@ function openBorrow(equipmentId, name, available) {
   quantity.max = available;
   document.getElementById('borrowAvailability').textContent = `Available: ${available}`;
 
-  const today = new Date().toISOString().split('T')[0];
-  const inAWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  borrowingLimitDays = Number(limitDays);
+  let window;
+  try {
+    window = await refreshPickupBounds();
+  } catch (err) {
+    toast(err.message, 'bad');
+    return;
+  }
+  const today = window.min_date;
   const borrowDate = document.getElementById('borrowDate');
   const returnDate = document.getElementById('expectedReturnDate');
 
   borrowDate.min = today;
   returnDate.min = today;
   borrowDate.value = today;
-  returnDate.value = inAWeek;
+  returnDate.value = '';
+  updateReturnBounds();
+  returnDate.value = returnDate.max;
   returnDate.min = today;
   clearError(borrowDate);
   clearError(returnDate);
@@ -216,30 +231,48 @@ function openBorrow(equipmentId, name, available) {
   borrowModal().show();
 }
 
-document.getElementById('borrowDate').addEventListener('change', () => {
-  const borrowDate = document.getElementById('borrowDate').value;
+async function refreshPickupBounds() {
+  const { data } = await Api.getPickupWindow();
+  pickupWindow = data;
+  const pickup = document.getElementById('borrowDate');
+  pickup.min = data.min_date;
+  pickup.max = data.max_date;
+  return data;
+}
+
+function calendarDateAfter(value, days) {
+  const date = new Date(value + 'T00:00:00Z');
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function updateReturnBounds() {
+  const pickup = document.getElementById('borrowDate').value;
   const returnDate = document.getElementById('expectedReturnDate');
-
-  // Return date can be the same day as the pick up date.
-  returnDate.min = borrowDate || new Date().toISOString().split('T')[0];
-
-  // Only clear the return date if it is BEFORE the pick up date.
-  if (returnDate.value && borrowDate && returnDate.value < borrowDate) {
-    returnDate.value = '';
+  returnDate.min = pickup || pickupWindow?.min_date || '';
+  returnDate.max = '';
+  if (pickup && Number.isInteger(borrowingLimitDays) && borrowingLimitDays > 0) {
+    returnDate.max = calendarDateAfter(pickup, borrowingLimitDays);
   }
+}
 
+document.getElementById('borrowDate').addEventListener('input', () => {
+  updateReturnBounds();
   syncBorrowButton();
+  if (document.getElementById('expectedReturnDate').value) validate(borrowRules);
 });
 
 document.getElementById('borrowForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!validate(borrowRules)) return;
-
   const btn = document.getElementById('borrowSubmit');
   btn.disabled = true;
   btn.textContent = 'Sending…';
 
   try {
+    // Refresh the server's local date in case the form stayed open overnight.
+    await refreshPickupBounds();
+    updateReturnBounds();
+    if (!validate(borrowRules)) return;
     await Api.createRequest({
       equipment_id: document.getElementById('borrowEquipmentId').value,
       borrow_date: document.getElementById('borrowDate').value,
@@ -254,6 +287,7 @@ document.getElementById('borrowForm').addEventListener('submit', async (e) => {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Send request';
+    syncBorrowButton();
   }
 });
 
@@ -262,6 +296,14 @@ document.getElementById('borrowForm').addEventListener('submit', async (e) => {
 const editModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal'));
 
 const editRules = {
+  editBorrowingLimit: [{
+    test: value => {
+      const text = String(value ?? '').trim();
+      const days = Number(text);
+      return /^[0-9]+$/.test(text) && Number.isInteger(days) && days >= 1 && days <= 3650;
+    },
+    message: 'Borrowing time limit must be a whole number between 1 and 3650 days.',
+  }],
   editTotalQuantity: [{
     test: v => /^[1-9]\d*$/.test(v),
     message: 'Total quantity must be a positive whole number.',
@@ -276,7 +318,7 @@ async function openEditor(equipmentId) {
   document.getElementById('editTitle').textContent = equipmentId ? 'Edit equipment' : 'Add equipment';
   document.getElementById('editId').value = equipmentId || '';
 
-  ['editName', 'editSerial', 'editDescription', 'editTotalQuantity'].forEach(id => {
+  ['editName', 'editSerial', 'editDescription', 'editTotalQuantity', 'editBorrowingLimit'].forEach(id => {
     const el = document.getElementById(id);
     el.value = '';
     clearError(el);
@@ -284,6 +326,7 @@ async function openEditor(equipmentId) {
   document.getElementById('editCategory').value = '';
   document.getElementById('editStatus').value = 'available';
   document.getElementById('editTotalQuantity').value = '1';
+  document.getElementById('editBorrowingLimit').value = '7';
 
   if (equipmentId) {
     try {
@@ -294,6 +337,7 @@ async function openEditor(equipmentId) {
       document.getElementById('editCategory').value = data.category_id || '';
       document.getElementById('editStatus').value = data.equipment_status || data.status || 'available';
       document.getElementById('editTotalQuantity').value = data.total_quantity || 1;
+      document.getElementById('editBorrowingLimit').value = data.borrowing_time_limit_days;
     } catch (err) {
       toast(err.message, 'bad');
       return;
@@ -315,6 +359,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
     category_id: document.getElementById('editCategory').value || null,
     status: document.getElementById('editStatus').value,
     total_quantity: document.getElementById('editTotalQuantity').value,
+    borrowing_time_limit_days: Number(document.getElementById('editBorrowingLimit').value),
   };
 
   const btn = document.getElementById('editSubmit');
