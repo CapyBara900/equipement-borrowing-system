@@ -1,9 +1,9 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
-require_once __DIR__ . '/../../includes/borrowing_dates.php';
+require_once __DIR__ . '/../../includes/borrowing_submission.php';
 
 const REQUEST_SELECT = '
-    SELECT r.request_id, r.request_date, r.borrow_date, r.expected_return_date, r.requested_quantity, r.status,
+    SELECT r.request_id, r.request_date, r.borrow_date, r.expected_return_date, r.requested_quantity, r.status, r.checkout_id,
            r.user_id, u.name AS user_name,
            r.equipment_id, e.equipment_name
     FROM borrowing_requests r
@@ -38,6 +38,10 @@ switch ($method) {
             $conditions[] = 'r.user_id = :user_id';
             $params['user_id'] = $user['user_id'];
         }
+        if (isset($_GET['checkout_id'])) {
+            $conditions[] = 'r.checkout_id = :checkout_id';
+            $params['checkout_id'] = borrowingPositiveInt($_GET['checkout_id'], 'checkout_id');
+        }
         if (!empty($_GET['status'])) {
             $conditions[] = 'r.status = :status';
             $params['status'] = $_GET['status'];
@@ -68,6 +72,8 @@ switch ($method) {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         sendJson(200, ['success' => true, 'data' => $stmt->fetchAll(), 'page' => $page, 'limit' => $limit]);
+        } catch (BorrowingFailure $e) {
+            sendJson($e->httpStatus, ['success' => false, 'message' => $e->getMessage()]);
         } catch (PDOException $e) {
             sendJson(500, ['success' => false, 'message' => 'Could not load requests. Please try again.']);
         }
@@ -76,87 +82,20 @@ switch ($method) {
     case 'POST':
         $user = requireRole(['customer']);
         $body = getJsonBody();
-        $equipmentId = $body['equipment_id'] ?? null;
-        $borrowDate  = $body['borrow_date'] ?? null;
-        $expectedReturnDate = $body['expected_return_date'] ?? null;
-        $requestedQuantity = $body['requested_quantity'] ?? null;
-
-        if (!$equipmentId || !$borrowDate || !$expectedReturnDate) {
-            sendJson(400, ['success' => false, 'message' => 'equipment_id, borrow_date, and expected_return_date are required.']);
-        }
-        if (filter_var($requestedQuantity, FILTER_VALIDATE_INT) === false || (int)$requestedQuantity < 1) {
-            sendJson(400, ['success' => false, 'message' => 'requested_quantity must be a positive whole number.']);
-        }
-        if (!is_string($borrowDate) || !is_string($expectedReturnDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $borrowDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $expectedReturnDate)) {
-            sendJson(400, ['success' => false, 'message' => 'Please enter valid dates.']);
-        }
-        $timezone = borrowingTimezone();
-        $borrowDateObj = DateTime::createFromFormat('!Y-m-d', $borrowDate, $timezone);
-        $returnDateObj = DateTime::createFromFormat('!Y-m-d', $expectedReturnDate, $timezone);
-        $pickupWindow = pickupDateWindow();
-        if (!$borrowDateObj || $borrowDateObj->format('Y-m-d') !== $borrowDate ||
-            !$returnDateObj || $returnDateObj->format('Y-m-d') !== $expectedReturnDate) {
-            sendJson(400, ['success' => false, 'message' => 'Please enter valid dates.']);
-        }
-        if ($borrowDate < $pickupWindow['min_date'] || $borrowDate > $pickupWindow['max_date']) {
-            sendJson(400, ['success' => false, 'message' => 'Pick up date must be between ' . $pickupWindow['min_date'] . ' and ' . $pickupWindow['max_date'] . ' (today through 7 calendar days in advance).']);
-        }
-        if ($returnDateObj < $borrowDateObj) {
-            sendJson(400, ['success' => false, 'message' => 'Return date cannot be before the pick up date.']);
-        }
-
         try {
+            $equipmentId = borrowingPositiveInt($body['equipment_id'] ?? null, 'equipment_id');
+            $quantity = borrowingPositiveInt($body['requested_quantity'] ?? null, 'requested_quantity');
+            // Preserve same-day single-item requests for existing interfaces.
+            [$pickup, $returned] = validateBorrowingDates($body['borrow_date'] ?? null, $body['expected_return_date'] ?? null);
             $db->beginTransaction();
-
-            // Lock the equipment row so two people can't grab it at once.
-            $check = $db->prepare('SELECT status, total_quantity, available_quantity, borrowing_time_limit_days FROM equipment WHERE equipment_id = :id FOR UPDATE');
-            $check->execute(['id' => $equipmentId]);
-            $equipment = $check->fetch();
-
-            if (!$equipment) {
-                $db->rollBack();
-                sendJson(404, ['success' => false, 'message' => 'Equipment not found.']);
-            }
-            $limitDays = (int)$equipment['borrowing_time_limit_days'];
-            $maximumReturn = (clone $borrowDateObj)->modify("+{$limitDays} days");
-            if ($returnDateObj > $maximumReturn) {
-                $db->rollBack();
-                sendJson(400, ['success' => false, 'message' => "Borrowing time limit is {$limitDays} days. Return by " . $maximumReturn->format('Y-m-d') . ' for the selected pick up date.']);
-            }
-            if ((int)$equipment['available_quantity'] < (int)$requestedQuantity) {
-                $db->rollBack();
-                sendJson(409, ['success' => false, 'message' => 'There are not enough available units for this request.']);
-            }
-
-            $stmt = $db->prepare(
-                'INSERT INTO borrowing_requests (user_id, equipment_id, borrow_date, expected_return_date, requested_quantity, status)
-                 VALUES (:user_id, :equipment_id, :borrow_date, :expected_return_date, :requested_quantity, :status)'
-            );
-            $stmt->execute([
-                'user_id'              => $user['user_id'],
-                'equipment_id'         => $equipmentId,
-                'borrow_date'          => $borrowDate,
-                'expected_return_date' => $expectedReturnDate,
-                'requested_quantity'   => (int)$requestedQuantity,
-                'status'               => 'pending',
-            ]);
-            $newRequestId = (int)$db->lastInsertId();
-
-            $reserve = $db->prepare(
-                'UPDATE equipment
-                 SET available_quantity = available_quantity - :quantity
-                 WHERE equipment_id = :id AND available_quantity >= :quantity'
-            );
-            $reserve->execute(['quantity' => (int)$requestedQuantity, 'id' => $equipmentId]);
-            if ($reserve->rowCount() !== 1) {
-                $db->rollBack();
-                sendJson(409, ['success' => false, 'message' => 'Those units are no longer available. Please try again.']);
-            }
-
+            $requests = createBorrowingRequests($db, (int)$user['user_id'], [['equipment_id' => $equipmentId, 'requested_quantity' => $quantity]], $pickup, $returned);
             $db->commit();
-            sendJson(201, ['success' => true, 'message' => 'Request submitted.', 'data' => ['request_id' => $newRequestId]]);
+            sendJson(201, ['success' => true, 'message' => 'Request submitted.', 'data' => ['request_id' => $requests[0]['request_id']]]);
+        } catch (BorrowingFailure $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendJson($e->httpStatus, ['success' => false, 'message' => $e->getMessage(), 'code' => $e->errorCode]);
         } catch (PDOException $e) {
-            $db->rollBack();
+            if ($db->inTransaction()) $db->rollBack();
             sendJson(500, ['success' => false, 'message' => 'Could not submit request. Please try again.']);
         }
         break;
@@ -235,7 +174,7 @@ switch ($method) {
             $db->rollBack();
             sendJson(409, ['success' => false, 'message' => 'Only pending requests can be cancelled.']);
         }
-        $db->prepare('DELETE FROM borrowing_requests WHERE request_id = :id')->execute(['id' => $id]);
+        $db->prepare("UPDATE borrowing_requests SET status = 'cancelled' WHERE request_id = :id")->execute(['id' => $id]);
         $db->prepare(
             'UPDATE equipment SET available_quantity = LEAST(total_quantity, available_quantity + :quantity)
              WHERE equipment_id = :id'

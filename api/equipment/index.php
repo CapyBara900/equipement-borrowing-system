@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/category_management.php';
 
 const EQUIPMENT_SELECT = '
     SELECT e.equipment_id, e.equipment_name, e.description, e.serial_number, e.status,
@@ -51,6 +52,7 @@ switch ($method) {
                        e.serial_number,
                        CASE WHEN e.available_quantity > 0 THEN 'available' ELSE 'unavailable' END AS status,
                        e.status AS equipment_status,
+                       GREATEST(0, e.total_quantity - e.available_quantity - COALESCE((SELECT SUM(active.requested_quantity) FROM borrowing_requests active WHERE active.equipment_id = e.equipment_id AND active.status IN ('pending','approved')), 0)) AS held_quantity,
                        e.total_quantity, e.available_quantity, e.borrowing_time_limit_days,
                        br.request_id  AS pending_request_id,
                        br.user_id     AS pending_user_id,
@@ -133,7 +135,8 @@ switch ($method) {
         $name = cleanText($body['equipment_name'] ?? '');
         $description = cleanText($body['description'] ?? '');
         $serialNumber = cleanText($body['serial_number'] ?? '');
-        $categoryId = $body['category_id'] ?? null;
+        try { $categoryId = categoryAssignmentId($db, $body['category_id'] ?? null); }
+        catch (InvalidArgumentException $e) { sendJson(400, ['success' => false, 'message' => $e->getMessage()]); }
         $status = $body['status'] ?? 'available';
         $borrowingLimit = $body['borrowing_time_limit_days'] ?? null;
         if ((!is_int($borrowingLimit) && (!is_string($borrowingLimit) || !ctype_digit($borrowingLimit))) || (int)$borrowingLimit < 1 || (int)$borrowingLimit > 3650) {
@@ -171,6 +174,7 @@ switch ($method) {
             ]);
             sendJson(201, ['success' => true, 'message' => 'Equipment added.', 'data' => ['equipment_id' => (int)$db->lastInsertId()]]);
         } catch (PDOException $e) {
+            if ((int)($e->errorInfo[1] ?? 0) === 1452) sendJson(409, ['success' => false, 'message' => 'The selected category no longer exists. Choose another category.']);
             sendJson(409, ['success' => false, 'message' => 'Could not add equipment. The serial number may already be in use.']);
         }
         break;
@@ -185,13 +189,20 @@ switch ($method) {
         $name = cleanText($body['equipment_name'] ?? '');
         $description = cleanText($body['description'] ?? '');
         $serialNumber = cleanText($body['serial_number'] ?? '');
-        $categoryId = $body['category_id'] ?? null;
+        try { $categoryId = categoryAssignmentId($db, $body['category_id'] ?? null); }
+        catch (InvalidArgumentException $e) { sendJson(400, ['success' => false, 'message' => $e->getMessage()]); }
         $status = $body['status'] ?? 'available';
         $borrowingLimit = $body['borrowing_time_limit_days'] ?? null;
         if ((!is_int($borrowingLimit) && (!is_string($borrowingLimit) || !ctype_digit($borrowingLimit))) || (int)$borrowingLimit < 1 || (int)$borrowingLimit > 3650) {
             sendJson(400, ['success' => false, 'message' => 'Borrowing time limit must be a whole number between 1 and 3650 days.']);
         }
         $totalQuantity = $body['total_quantity'] ?? null;
+        $releaseQuantity = $body['release_quantity'] ?? 0;
+        if ((!is_int($releaseQuantity) && (!is_string($releaseQuantity) || !ctype_digit($releaseQuantity))) || filter_var($releaseQuantity, FILTER_VALIDATE_INT) === false || (int)$releaseQuantity < 0 || (int)$releaseQuantity > 2147483647) {
+            sendJson(400, ['success' => false, 'message' => 'release_quantity must be a nonnegative whole number.']);
+        }
+        $releaseQuantity = (int)$releaseQuantity;
+        if ($releaseQuantity > 0 && $status !== 'available') sendJson(400, ['success' => false, 'message' => 'Cleared units must be marked available for reuse.']);
         if ($name === '') {
             sendJson(400, ['success' => false, 'message' => 'equipment_name is required.']);
         }
@@ -217,21 +228,24 @@ switch ($method) {
                 sendJson(404, ['success' => false, 'message' => 'Equipment not found.']);
             }
             $unavailable = (int)$current['total_quantity'] - (int)$current['available_quantity'];
+            if ($releaseQuantity > 0) {
+                // The locked equipment row serializes this with reservation/restoration.
+                $active = $db->prepare("SELECT COALESCE(SUM(requested_quantity),0) FROM borrowing_requests WHERE equipment_id = ? AND status IN ('pending','approved')");
+                $active->execute([$id]);
+                $held = $unavailable - (int)$active->fetchColumn();
+                if ($releaseQuantity > $held) {
+                    $db->rollBack();
+                    sendJson(409, ['success' => false, 'message' => 'Only condition-held units may be cleared; active reservations cannot be released.']);
+                }
+                $unavailable -= $releaseQuantity;
+            }
             if ((int)$totalQuantity < $unavailable) {
                 $db->rollBack();
                 sendJson(409, ['success' => false, 'message' => "Total quantity cannot be lower than the {$unavailable} units currently unavailable."]);
             }
-            $oldTotal = (int)$current['total_quantity'];
-            $oldAvailable = (int)$current['available_quantity'];
-            $newTotal = (int)$totalQuantity;
-
-            // Increasing the inventory adds new units; it must not reset or
-            // discard units already committed by pending/approved requests.
-            $quantityIncrease = max(0, $newTotal - $oldTotal);
-            $available = min($newTotal, $oldAvailable + $quantityIncrease);
-            if ($newTotal < $oldTotal) {
-                $available = min($newTotal, $oldAvailable);
-            }
+            // Preserve both active reservations and condition-related holds.
+            // A status change alone never clears unavailable stock.
+            $available = (int)$totalQuantity - $unavailable;
             $stmt = $db->prepare(
                 'UPDATE equipment
                  SET equipment_name = :name, description = :description, serial_number = :serial_number,
@@ -245,10 +259,15 @@ switch ($method) {
                 'category_id' => $categoryId ?: null, 'total_quantity' => (int)$totalQuantity,
                 'available_quantity' => $available, 'status' => $status, 'id' => $id,
             ]);
+            if ($releaseQuantity > 0) {
+                $db->prepare("INSERT INTO equipment_condition_reports (equipment_id, reported_by_user_id, condition_status, notes) VALUES (?, ?, 'good', ?)")
+                    ->execute([$id, currentUser()['user_id'], $releaseQuantity . ' units cleared for reuse by authorized staff.']);
+            }
             $db->commit();
             sendJson(200, ['success' => true, 'message' => 'Equipment updated.']);
         } catch (PDOException $e) {
             if ($db->inTransaction()) $db->rollBack();
+            if ((int)($e->errorInfo[1] ?? 0) === 1452) sendJson(409, ['success' => false, 'message' => 'The selected category no longer exists. Choose another category.']);
             sendJson(409, ['success' => false, 'message' => 'Could not update equipment.']);
         }
         break;

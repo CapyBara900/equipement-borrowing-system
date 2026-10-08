@@ -6,7 +6,7 @@ Plain PHP (PDO) backend on **MySQL**, built for XAMPP + phpMyAdmin.
 1. Start Apache and MySQL in the XAMPP Control Panel.
 2. Open http://localhost/phpmyadmin, create a new database, e.g.
    `equipment_borrowing_system`.
-3. Select it, open the **SQL** tab, paste the entire contents of
+3. For a **fresh database only**, select it, open the **SQL** tab, paste the entire contents of
    `database/schema.sql`, and run it. This creates all 8 tables (`roles`,
    `users`, `categories`, `equipment`, `borrowing_requests`, `returns`,
    `equipment_condition_reports`, `notifications`) plus seed data.
@@ -36,6 +36,27 @@ advance, inclusive. Set `APP_TIMEZONE` in `.env` to an IANA timezone (default:
 `Asia/Manila`). The customer calendar receives its bounds from the server, and
 the request API enforces the same local-date window before reserving stock.
 Return dates still use the selected pickup date plus the equipment limit.
+
+## Borrowing cart database upgrade
+
+After configuring .env and applying the existing quantity/time-limit migrations, run:
+
+```text
+C:\xampp\php\php.exe database\migrate_borrowing_cart.php --dry-run
+C:\xampp\php\php.exe database\migrate_borrowing_cart.php
+C:\xampp\php\php.exe database\migrate_cart_item_dates.php --dry-run
+C:\xampp\php\php.exe database\migrate_cart_item_dates.php
+```
+
+These additive, resumable migrations enable persistent customer carts, durable
+idempotency, and grouped request IDs while retaining existing request rows and
+inventory. They add two InnoDB tables and constraints/indexes, and record
+cancellation as a status so history is retained. They never reset existing data.
+The second migration adds independent per-entry quantities/dates and permits
+separate dated entries for the same equipment. Existing undated cart entries
+remain as drafts requiring dates before checkout. Fresh installations also run both migrations after schema.sql. Do not rerun
+schema.sql on an existing database. See [BORROWING_CART.md](BORROWING_CART.md)
+for the schema/API contract and MySQL, concurrency, and real HTTP tests.
 
 ## 3. Create the first admin account
 ```
@@ -72,7 +93,7 @@ ebs/
     └── create_admin.php            one-time CLI script to create an admin
 ```
 
-## Database design (matches the Phase 1 ERD, expanded to 8 tables)
+## Database design (10 tables after the borrowing cart migration)
 
 | Table | Primary Key | Foreign Keys | Key Fields |
 |---|---|---|---|
@@ -80,7 +101,9 @@ ebs/
 | users | user_id | role_id → roles.role_id | name, email, password_hash, created_at |
 | categories | category_id | — | category_name, description |
 | equipment | equipment_id | category_id → categories.category_id | equipment_name, description, serial_number, status |
-| borrowing_requests | request_id | user_id → users, equipment_id → equipment | request_date, borrow_date, expected_return_date, status |
+| borrowing_requests | request_id | user_id → users, equipment_id → equipment, nullable checkout_id → borrowing_checkouts | request_date, borrow_date, expected_return_date, requested_quantity, status |
+| borrowing_cart_items | cart_item_id | user_id → users, equipment_id → equipment | quantity, borrow_date, expected_return_date, created_at, updated_at; unique customer/equipment/dates |
+| borrowing_checkouts | checkout_id | user_id → users | idempotency_key, payload_hash, response_json, borrow_date, expected_return_date, created_at |
 | returns | return_id | request_id → borrowing_requests, processed_by_staff_id → users | actual_return_date, remarks |
 | equipment_condition_reports | report_id | equipment_id → equipment, reported_by_user_id → users | condition_status, notes, logged_at |
 | notifications | notification_id | user_id → users | message, is_read, created_at |
@@ -143,7 +166,7 @@ reloads a second time to get data.
    checking in equipment, filtering, and paging all update in place.
 5. **Form validation** — `validate()` / `Rules` in `assets/js/app.js`. Covers
    required fields, email format, strong password requirements, password confirmation, and
-   date logic (no past pick-up date; return must come after pick-up). Errors
+   date logic (no past pick-up date; return on or after pick-up). Errors
    appear inline per field and also fire on blur.
 6. **Search / filter** — equipment.html (keyword + category + status + sort +
    pagination) and requests.html (status + date range).
@@ -159,3 +182,46 @@ reloads a second time to get data.
 `api.qrserver.com` is called from the browser, so it needs internet access on
 the machine running the demo. If it's unavailable the modal shows an error and
 nothing else breaks.
+
+## Equipment category management
+
+Admins and staff can use **Add Category** and **Manage categories** on the Equipment
+page. The admin People & categories tab uses the same editor. Customers can view
+and filter categories but cannot manage them. Names are trimmed, repeated
+whitespace is collapsed, and the database enforces case-insensitive uniqueness.
+Names require at least one letter or number, allow up to 100 Unicode characters,
+and reject markup/control characters. Descriptions allow up to 500 characters.
+
+Upgrade existing databases from the project directory (do not rerun schema.sql):
+
+```text
+C:\xampp\php\php.exe database\migrate_category_management.php --dry-run
+C:\xampp\php\php.exe database\migrate_category_management.php
+```
+
+The migration preserves category IDs and equipment assignments, normalizes
+existing names, sets the category-name unique index to a case-insensitive
+collation, and changes the equipment foreign key to ON DELETE RESTRICT. It
+preflights invalid/colliding names before changing data; resolve any reported
+legacy names first. Run during a maintenance window for the schema alterations.
+It is safe to rerun. Fresh installations already include these constraints.
+
+Category GET supports all=1 for complete dropdowns (including more than 50
+categories). POST/PUT/DELETE require admin or staff; duplicate names and assigned
+category deletions return 409 with CATEGORY_DUPLICATE or CATEGORY_IN_USE.
+Invalid input returns 400; missing categories return 404. Equipment saves also
+validate the chosen category. Assigned categories cannot be deleted: reassign
+equipment to another category first.
+
+The shared catalog updates dropdowns and listings after each save without a
+page reload. Same-browser tabs receive change broadcasts; other active sessions
+receive server-sent snapshots, normally within one second. A five-second poll
+is used as fallback when event streams are unavailable, and returning to a tab
+refreshes its catalog. Streaming releases the PHP session lock before waiting.
+
+Verification:
+
+```text
+C:\xampp\php\php.exe tests\category_management_api.php
+node tests/category_management_validation.cjs
+```

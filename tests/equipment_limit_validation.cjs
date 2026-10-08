@@ -21,6 +21,7 @@ function element(id) {
 }
 let stored = { equipment_id: 42, equipment_name: 'Test equipment', total_quantity: 3, available_quantity: 2, borrowing_time_limit_days: 7 };
 let submitted = [];
+element('editReleaseQuantity').value = '0';
 const context = vm.createContext({
   document: { getElementById: element, querySelector: selector => element(selector) },
   bootstrap: { Modal: { getOrCreateInstance: () => ({ show() {}, hide() {} }) } },
@@ -28,6 +29,7 @@ const context = vm.createContext({
     getEquipment: async () => ({ data: { ...stored } }),
     updateEquipment: async payload => { submitted.push(payload); stored = { ...stored, ...payload }; },
   },
+  CategoryStore: { refresh: async () => {} },
   toast() {}, Number, String, Date,
 });
 const app = fs.readFileSync(path.join(root, 'assets/js/app.js'), 'utf8');

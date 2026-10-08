@@ -40,6 +40,7 @@ function toast(message, kind = 'ok') {
 const NAV_LINKS = [
   { href: 'dashboard.html', label: 'Overview', roles: ['admin', 'staff', 'customer'] },
   { href: 'equipment.html', label: 'Equipment', roles: ['admin', 'staff', 'customer'] },
+  { href: 'cart.html', label: 'Borrowing Cart', roles: ['customer'], cart: true },
   { href: 'requests.html', label: 'Requests', roles: ['admin', 'staff', 'customer'] },
   { href: 'returns.html', label: 'Returns', roles: ['admin', 'staff'] },
   { href: 'notifications.html', label: 'Notifications', roles: ['customer'], badge: true },
@@ -52,7 +53,7 @@ function navMarkup(user, unreadCount) {
     .filter(l => l.roles.includes(user.role))
     .map(l => {
       const active = l.href === here ? ' active' : '';
-      const badge = (l.badge && unreadCount > 0)
+      const badge = l.cart ? ` <span class="badge-count" data-cart-count aria-live="polite" aria-label="equipment items in cart">${BorrowingCart.read().length}</span>` : (l.badge && unreadCount > 0)
         ? ` <span class="badge-count">${unreadCount}</span>` : '';
       return `<a class="nav-item${active}" href="${l.href}">
                 <span>${esc(l.label)}</span>${badge}
@@ -109,6 +110,10 @@ async function requireSession(allowedRoles = null) {
        Ask an administrator if you think you should have access.</div>`;
     await renderShell(CURRENT_USER);
     throw new Error('role not permitted');
+  }
+  if (CURRENT_USER.role === 'customer') {
+    try { await BorrowingCart.initialize(); }
+    catch (error) { toast('Could not load your saved cart. ' + error.message, 'bad'); }
   }
   await renderShell(CURRENT_USER);
   return CURRENT_USER;
@@ -369,3 +374,59 @@ function debounce(fn, wait = 300) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
 }
+
+/* Temporary customer-scoped cart. No request or stock mutations. */
+// Calendar arithmetic is shared by the direct form and dated cart editors.
+const BorrowingDetails = {
+  dateAfter(value,days) { const date=new Date(value+'T00:00:00Z');date.setUTCDate(date.getUTCDate()+days);return date.toISOString().slice(0,10); },
+  dateValid(value) { return typeof value==='string' && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) && Number.isFinite(Date.parse(value+'T00:00:00Z')) && this.dateAfter(value,0)===value; },
+  validate(details,item,window) {
+    const errors={};const q=Number(details.quantity);const pickup=details.borrow_date;const returned=details.expected_return_date;
+    if (!/^[1-9][0-9]*$/.test(String(details.quantity)) || !Number.isSafeInteger(q) || q>2147483647) errors.quantity='Enter a whole quantity of at least 1.';
+    else if (q>Number(item.available_quantity) || item.status!=='available') errors.quantity='Requested quantity exceeds the currently available stock.';
+    if (!this.dateValid(pickup)) errors.borrow_date='Pick Up On is required and must be a valid date.';
+    else if (!window || pickup<window.min_date || pickup>window.max_date) errors.borrow_date='Pick Up On must be today through 7 calendar days in advance.';
+    if (!this.dateValid(returned)) errors.expected_return_date='Return By is required and must be a valid date.';
+    else if (this.dateValid(pickup)) {
+      if (returned<pickup) errors.expected_return_date='Return By cannot be earlier than Pick Up On.';
+      else if (!Number.isInteger(Number(item.borrowing_time_limit_days)) || Number(item.borrowing_time_limit_days)<1 || returned>this.dateAfter(pickup,Number(item.borrowing_time_limit_days))) errors.expected_return_date='Return By exceeds this equipment’s borrowing time limit.';
+    }
+    return errors;
+  },
+};
+
+const BorrowingCart = (() => {
+  const key=()=> 'equipment-desk:cart:v1:'+CURRENT_USER.user_id;
+  const signature=row=>[Number(row.equipment_id),row.borrow_date||'',row.expected_return_date||''].join('|');
+  const entryKey=row=>String(row.cart_item_id || ('local-'+signature(row)));
+  let serverRows=null,initialization=null;const fallback=new Map(),memoryOnly=new Set();
+  function previous() {
+    if (!CURRENT_USER || CURRENT_USER.role!=='customer') return [];
+    try {
+      const rows=memoryOnly.has(key())?(fallback.get(key())||[]):JSON.parse(localStorage.getItem(key())||'[]');if(!Array.isArray(rows))return [];
+      const seen=new Set();return rows.filter(row=>row&&/^[1-9][0-9]*$/.test(String(row.equipment_id))&&Number.isSafeInteger(row.quantity)&&row.quantity>0&&!seen.has(signature(row))&&seen.add(signature(row))).map(row=>({...row,cart_item_id:entryKey(row)}));
+    } catch (_) { return fallback.get(key())||[]; }
+  }
+  function read(){return serverRows===null?previous():serverRows.map(row=>({...row}));}
+  function updateBadges(){document.querySelectorAll('[data-cart-count]').forEach(el=>{el.textContent=read().length;});}
+  function write(rows){if(serverRows!==null)serverRows=rows;else{fallback.set(key(),rows);try{localStorage.setItem(key(),JSON.stringify(rows));}catch(_){memoryOnly.add(key());toast('Browser storage is unavailable. Your cart lasts on this page.','bad');}}updateBadges();}
+  async function initialize(){if(!initialization)initialization=(async()=>{const {data}=await Api.cartCapabilities();if(data.cart_available){const result=await Api.getCart();serverRows=result.data;updateBadges();}return data;})().catch(error=>{initialization=null;throw error;});return initialization;}
+  async function reload(){if(serverRows!==null){const {data}=await Api.getCart();write(data);}return read();}
+  async function add(item,details,window){
+    const errors=BorrowingDetails.validate(details||{},item,window);if(Object.keys(errors).length)throw new Error(Object.values(errors)[0]);
+    const body={equipment_id:item.equipment_id,quantity:Number(details.quantity),borrow_date:details.borrow_date,expected_return_date:details.expected_return_date};
+    if(serverRows!==null){const {data}=await Api.addCartItem(body);write(data);}
+    else {const rows=read();const existing=rows.find(row=>signature(row)===signature(body));const quantity=(existing?.quantity||0)+body.quantity;if(quantity>Number(item.available_quantity))throw new Error('Combined quantity for these dates exceeds available stock.');if(existing)Object.assign(existing,body,{quantity});else rows.push({...item,...body,cart_item_id:entryKey(body)});write(rows);}
+    return true;
+  }
+  async function update(id,details){if(serverRows!==null){const {data}=await Api.updateCartItem(id,details);write(data);}else{const rows=read();const row=rows.find(r=>entryKey(r)===String(id));if(!row)throw new Error('Cart entry not found.');const changed={...row,...details};if(rows.some(r=>entryKey(r)!==String(id)&&signature(r)===signature(changed)))throw new Error('Another entry already uses those dates.');Object.assign(row,details);write(rows);}}
+  async function remove(id){if(serverRows!==null){const {data}=await Api.removeCartItem(id);write(data);}else write(read().filter(row=>entryKey(row)!==String(id)));}
+  async function importPrevious(edited){
+    if(serverRows===null)throw new Error('The server cart is unavailable.');const original=previous();if(!original.length)return;
+    const rows=edited||original;const {data}=await Api.importCart(rows.map(row=>({equipment_id:row.equipment_id,quantity:Number(row.quantity),borrow_date:row.borrow_date,expected_return_date:row.expected_return_date})));
+    if(!Array.isArray(data)||!rows.every(row=>data.some(saved=>signature(saved)===signature(row)&&saved.quantity>=Number(row.quantity))))throw new Error('Import was not confirmed. Your browser cart is preserved.');write(data);
+    const sent=new Map(original.map(row=>[entryKey(row),row.quantity]));const remaining=previous().flatMap(row=>{const quantity=row.quantity-(sent.get(entryKey(row))||0);return quantity>0?[{...row,quantity}]:[];});localStorage.setItem(key(),JSON.stringify(remaining));fallback.set(key(),remaining);memoryOnly.delete(key());
+  }
+  window.addEventListener('storage',updateBadges);
+  return {read,write,add,update,remove,initialize,reload,previous,importPrevious,entryKey,signature,updateBadges,isServer:()=>serverRows!==null};
+})();

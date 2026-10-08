@@ -125,7 +125,7 @@ a {
   font-size: 0.8rem;
 }
 
-.rail a.nav-item {
+:is(.rail, .rail-canvas) a.nav-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -136,12 +136,12 @@ a {
   border-left: 3px solid transparent;
 }
 
-.rail a.nav-item:hover {
+:is(.rail, .rail-canvas) a.nav-item:hover {
   background: rgba(255, 255, 255, .06);
   color: #fff;
 }
 
-.rail a.nav-item.active {
+:is(.rail, .rail-canvas) a.nav-item.active {
   background: rgba(255, 255, 255, .09);
   color: #fff;
   border-left-color: var(--pending);
@@ -747,3 +747,20 @@ td .empty {
 /* Eye-icon show/hide button on password fields */
 .pw-toggle { display: inline-flex; align-items: center; justify-content: center; padding: 0 .75rem; }
 .pw-toggle .pw-icon { display: block; }
+/* Borrowing cart: reuse catalog rows, panels, and design tokens. */
+.cart-layout { display:grid; grid-template-columns:minmax(0, 1fr) 300px; gap:1.25rem; align-items:start; }
+.cart-summary { position:sticky; top:1.5rem; }
+.cart-notice { padding:.85rem 1rem; background:#eef1f6; border-left:3px solid var(--info); border-radius:var(--radius); color:var(--ink-soft); }
+.cart-error { border-color:var(--fault); }
+.cart-warning { color:var(--fault); font-size:.85rem; margin-top:.4rem; }
+.p-unavailable { color:var(--fault); }
+.item-row.s-unavailable { border-left-color:var(--fault); }
+.cart-controls { flex:0 0 160px; }
+.cart-stepper { display:flex; gap:.3rem; }
+.cart-stepper input { width:70px; text-align:center; }
+.cart-summary-item { display:flex; justify-content:space-between; gap:1rem; padding:.6rem 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.cart-row h3, .cart-row .meta { overflow-wrap:anywhere; }
+.cart-row > .form-check-input { flex:none; }
+#checkout { scroll-margin-top:4rem; }
+@media(max-width:1199.98px) { .cart-layout { grid-template-columns:1fr; } .cart-summary { position:static; } }
+@media(max-width:575.98px) { .cart-row { flex-direction:row; flex-wrap:wrap; } .cart-row .grow { flex:1; } .cart-controls { flex:1 0 100%; } .cart-stepper input { width:90px; } }

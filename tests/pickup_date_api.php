@@ -2,7 +2,7 @@
 // Uses the configured local database and removes its test records afterward.
 require __DIR__ . '/../config/database.php';
 require __DIR__ . '/../includes/auth_middleware.php';
-require __DIR__ . '/../includes/borrowing_dates.php';
+require __DIR__ . '/../includes/borrowing_submission.php';
 class PickupApiResult extends Exception {
     public function __construct(public int $status, public array $payload) {}
 }

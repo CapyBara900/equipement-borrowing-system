@@ -28,6 +28,7 @@ const context = vm.createContext({
 });
 const app = fs.readFileSync(path.join(root, 'assets/js/app.js'), 'utf8');
 vm.runInContext(app.slice(app.indexOf('function showError('), app.indexOf('/* ---------- Small formatters')), context);
+vm.runInContext(app.slice(app.indexOf('const BorrowingDetails ='), app.indexOf('const BorrowingCart =')), context);
 const source = fs.readFileSync(path.join(root, 'assets/js/equipment.js'), 'utf8');
 vm.runInContext(source.slice(source.indexOf('const borrowModal ='), source.indexOf('/* ---------- Admin:')) + '\nasync function loadEquipment() {}', context);
 (async () => {

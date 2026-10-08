@@ -2,6 +2,7 @@
 // Uses the configured local database; creates and removes one equipment fixture.
 require __DIR__ . '/../config/database.php';
 require __DIR__ . '/../includes/auth_middleware.php';
+require __DIR__ . '/../includes/category_management.php';
 class EquipmentApiResult extends Exception {
     public function __construct(public int $status, public array $payload) {}
 }
@@ -15,7 +16,8 @@ function equipmentApi(string $method, string $role, array $body = [], array $que
     $_GET = $query;
     $GLOBALS['testBody'] = $body;
     $source = file_get_contents(__DIR__ . '/../api/equipment/index.php');
-    $source = preg_replace('/^<\?php\s*require_once[^;]+;/', '', $source);
+    $source = preg_replace('/^<\?php/', '', $source);
+    $source = preg_replace('/require_once[^;]+;/', '', $source);
     $source = str_replace('const EQUIPMENT_SELECT', '$equipmentSelect', $source);
     $source = str_replace('EQUIPMENT_SELECT', '$equipmentSelect', $source);
     try { eval($source); } catch (EquipmentApiResult $result) { return $result; }

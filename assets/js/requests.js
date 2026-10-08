@@ -106,6 +106,7 @@ function rowMarkup(r) {
         <div class="meta">
           ${pill(r.status)}
           · <span class="refid">#${esc(r.request_id)}</span>
+          ${r.checkout_id ? ' · Cart request #' + esc(r.checkout_id) : ''}
           ${isDesk ? ' · ' + esc(r.user_name) : ''}
         </div>
         <div class="meta mt-1">Quantity: ${esc(r.requested_quantity)}</div>

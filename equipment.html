@@ -29,8 +29,18 @@
         <h1>Equipment</h1>
         <p>Find something and request it. The stripe on each row shows whether it's free.</p>
       </div>
-      <button class="btn btn-primary btn-sm" id="addEquipmentBtn" hidden>Add equipment</button>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="manageCategoriesBtn" hidden>Manage categories</button>
+        <button class="btn btn-outline-primary btn-sm" id="addCategoryBtn" hidden>Add Category</button>
+        <button class="btn btn-primary btn-sm" id="addEquipmentBtn" hidden>Add equipment</button>
+      </div>
     </div>
+
+    <details class="panel mb-3" id="categoryManagement" hidden>
+      <summary class="panel-head"><h2 class="d-inline">Equipment categories</h2></summary>
+      <p class="form-text px-3">Edit names and descriptions here. Reassign equipment before deleting its category.</p>
+      <div class="panel-body" id="categoryList" aria-live="polite"></div>
+    </details>
 
     <!-- Search / filter / sort -->
     <div class="panel mb-3">
@@ -88,13 +98,14 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title h5">Request equipment</h2>
+        <h2 class="modal-title h5" id="borrowModalTitle">Request equipment</h2>
         <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form id="borrowForm" novalidate>
         <div class="modal-body">
           <p class="mb-3" id="borrowItemName" style="font-weight:600"></p>
           <input type="hidden" id="borrowEquipmentId">
+          <p class="form-text" id="borrowModeHint"></p>
           <div class="mb-3">
             <label class="form-label" for="borrowQuantity">Quantity</label>
             <input class="form-control" type="number" id="borrowQuantity" min="1" step="1" required>
@@ -139,6 +150,12 @@
             <label class="form-label mt-3" for="editTotalQuantity">Total quantity</label>
             <input class="form-control" type="number" id="editTotalQuantity" min="1" step="1" required>
             <div class="field-error" data-error-for="editTotalQuantity"></div>
+            <div id="releaseStockControl" hidden>
+              <label class="form-label mt-3" for="editReleaseQuantity">Held units cleared for reuse</label>
+              <input class="form-control" type="number" id="editReleaseQuantity" min="0" step="1" value="0">
+              <div class="form-text" id="releaseStockHint">Clear only repaired or recovered units. Active borrowings stay reserved.</div>
+              <div class="field-error" data-error-for="editReleaseQuantity"></div>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label" for="editName">Name</label>
@@ -194,8 +211,9 @@
 <div id="toastZone"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/api.js?v=20261008-pickup"></script>
-<script src="assets/js/app.js"></script>
-<script src="assets/js/equipment.js?v=20261008-pickup-clean"></script>
+<script src="assets/js/api.js?v=dated-cart-v2"></script>
+<script src="assets/js/app.js?v=dated-cart-v2"></script>
+<script src="assets/js/categories.js?v=category-management-v1"></script>
+<script src="assets/js/equipment.js?v=category-management-v1"></script>
 </body>
 </html>

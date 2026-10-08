@@ -45,7 +45,7 @@ CREATE TABLE users (
 -- ------------------------------------------------------------
 CREATE TABLE categories (
     category_id   INT AUTO_INCREMENT PRIMARY KEY,
-    category_name VARCHAR(100) NOT NULL UNIQUE,
+    category_name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
     description   TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -64,7 +64,7 @@ CREATE TABLE equipment (
     status         ENUM('available', 'borrowed', 'maintenance', 'pending') NOT NULL DEFAULT 'available',
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_equipment_category FOREIGN KEY (category_id)
-        REFERENCES categories(category_id) ON DELETE SET NULL,
+        REFERENCES categories(category_id) ON DELETE RESTRICT,
     CONSTRAINT chk_equipment_borrowing_limit CHECK (borrowing_time_limit_days BETWEEN 1 AND 3650),
     CONSTRAINT chk_equipment_quantities CHECK (available_quantity <= total_quantity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

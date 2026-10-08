@@ -6,9 +6,10 @@
 const API_BASE = 'api';
 
 class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, code = null) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -46,7 +47,7 @@ async function request(path, { method = 'GET', body = null, query = null } = {})
   }
 
   if (!res.ok || payload.success === false) {
-    throw new ApiError(payload.message || `Request failed (HTTP ${res.status}).`, res.status);
+    throw new ApiError(payload.message || `Request failed (HTTP ${res.status}).`, res.status, payload.code);
   }
   return payload;
 }
@@ -69,6 +70,15 @@ const Api = {
   createCategory: (d) => request('categories/index.php', { method: 'POST', body: d }),
   updateCategory: (d) => request('categories/index.php', { method: 'PUT', body: d }),
   deleteCategory: (id) => request('categories/index.php', { method: 'DELETE', query: { id } }),
+
+  // --- customer cart ---
+  cartCapabilities: () => request('cart/index.php', { query: { capabilities: 1 } }),
+  getCart: () => request('cart/index.php'),
+  addCartItem: (body) => request('cart/index.php', { method: 'POST', body }),
+  updateCartItem: (cart_item_id, details) => request('cart/index.php', { method: 'PUT', body: { cart_item_id, ...details } }),
+  removeCartItem: (cart_item_id) => request('cart/index.php', { method: 'DELETE', body: { cart_item_id } }),
+  importCart: (items) => request('cart/import.php', { method: 'POST', body: { items } }),
+  checkoutCart: (body) => request('cart/checkout.php', { method: 'POST', body }),
 
   // --- borrowing ---
   getPickupWindow: () => request('borrowing-settings/index.php'),

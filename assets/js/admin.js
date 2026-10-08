@@ -2,18 +2,18 @@
 
 let me = null;
 let syncUserButton = null;
-let syncCategoryButton = null;
+
 
 (async function () {
   me = await requireSession(['admin']);
 
   document.getElementById('addUserBtn').addEventListener('click', openUserModal);
-  document.getElementById('addCategoryBtn').addEventListener('click', () => openCategoryModal(null));
+  CategoryManager.init(me);
 
   wireUserForm();
-  wireCategoryForm();
 
-  await Promise.all([loadUsers(), loadCategories()]);
+
+  await Promise.all([loadUsers(), CategoryStore.start()]);
 })();
 
 /* ---------- People ---------- */
@@ -155,112 +155,4 @@ function wireUserForm() {
       btn.textContent = 'Create account';
     }
   });
-}
-
-/* ---------- Categories ---------- */
-
-async function loadCategories() {
-  const host = document.getElementById('categoryList');
-  try {
-    const { data } = await Api.listCategories({ limit: 50 });
-    if (!data.length) {
-      host.innerHTML = emptyState('No categories yet', 'Add one so equipment can be grouped and filtered.');
-      return;
-    }
-    host.innerHTML = data.map(c => `
-      <article class="item-row">
-        <div class="grow">
-          <h3>${esc(c.category_name)}</h3>
-          <div class="meta">${esc(c.description || 'No description')}</div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-sm btn-outline-secondary"
-                  data-edit-category="${esc(c.category_id)}"
-                  data-name="${esc(c.category_name)}"
-                  data-description="${esc(c.description || '')}">Edit</button>
-          <button class="btn btn-sm btn-outline-danger"
-                  data-delete-category="${esc(c.category_id)}"
-                  data-name="${esc(c.category_name)}">Delete</button>
-        </div>
-      </article>`).join('');
-
-    document.querySelectorAll('[data-edit-category]').forEach(btn => {
-      btn.addEventListener('click', () => openCategoryModal({
-        id: btn.dataset.editCategory,
-        name: btn.dataset.name,
-        description: btn.dataset.description,
-      }));
-    });
-    document.querySelectorAll('[data-delete-category]').forEach(btn => {
-      btn.addEventListener('click', () => removeCategory(btn.dataset.deleteCategory, btn.dataset.name));
-    });
-  } catch (err) {
-    host.innerHTML = emptyState("Couldn't load categories", err.message);
-  }
-}
-
-const categoryModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('categoryModal'));
-
-const categoryRules = {
-  categoryName: [Rules.required('Name'), Rules.maxLength(100, 'Name')],
-  categoryDescription: [Rules.maxLength(500, 'Description')],
-};
-
-function openCategoryModal(existing) {
-  document.getElementById('categoryTitle').textContent = existing ? 'Edit category' : 'Add category';
-  document.getElementById('categoryId').value = existing ? existing.id : '';
-  const nameEl = document.getElementById('categoryName');
-  const descEl = document.getElementById('categoryDescription');
-  nameEl.value = existing ? existing.name : '';
-  descEl.value = existing ? existing.description : '';
-  clearError(nameEl);
-  clearError(descEl);
-  if (syncCategoryButton) syncCategoryButton();
-  categoryModal().show();
-}
-
-function wireCategoryForm() {
-  syncCategoryButton = liveValidate(categoryRules, 'categorySubmit');
-  document.getElementById('categoryForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!validate(categoryRules)) return;
-
-    const id = document.getElementById('categoryId').value;
-    const payload = {
-      category_name: document.getElementById('categoryName').value.trim(),
-      description: document.getElementById('categoryDescription').value.trim(),
-    };
-
-    const btn = document.getElementById('categorySubmit');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    try {
-      if (id) {
-        await Api.updateCategory({ ...payload, category_id: id });
-        toast('Category updated.');
-      } else {
-        await Api.createCategory(payload);
-        toast('Category added.');
-      }
-      categoryModal().hide();
-      await loadCategories();
-    } catch (err) {
-      toast(err.message, 'bad');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save';
-    }
-  });
-}
-
-async function removeCategory(id, name) {
-  if (!confirm(`Delete "${name}"? Equipment in it becomes uncategorised.`)) return;
-  try {
-    await Api.deleteCategory(id);
-    toast('Category deleted.');
-    await loadCategories();
-  } catch (err) {
-    toast(err.message, 'bad');
-  }
 }
