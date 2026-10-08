@@ -743,3 +743,7 @@ td .empty {
   outline: 2px solid var(--info);
   outline-offset: 2px;
 }
+
+/* Eye-icon show/hide button on password fields */
+.pw-toggle { display: inline-flex; align-items: center; justify-content: center; padding: 0 .75rem; }
+.pw-toggle .pw-icon { display: block; }

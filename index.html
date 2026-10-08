@@ -84,13 +84,19 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="regPassword">Password</label>
-            <input class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="input-group">
+              <input class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="••••••••" required>
+              <button class="btn btn-outline-secondary pw-toggle" type="button" id="toggleRegPassword" aria-label="Show password" aria-pressed="false" title="Show password"><svg class="pw-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
             <div class="field-error" data-error-for="regPassword"></div>
             <div class="form-text mt-1" style="font-size: 0.8rem; color: var(--slate);">At least 12 characters, with uppercase, lowercase, number, and special character (!@#$%^&amp;*). No spaces or personal information.</div>
           </div>
           <div class="mb-4">
             <label class="form-label" for="regConfirm">Confirm password</label>
-            <input class="form-control" type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="input-group">
+              <input class="form-control" type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
+              <button class="btn btn-outline-secondary pw-toggle" type="button" id="toggleRegConfirm" aria-label="Show password" aria-pressed="false" title="Show password"><svg class="pw-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
             <div class="field-error" data-error-for="regConfirm"></div>
           </div>
           <button class="btn btn-primary w-100 mb-3" type="submit" id="registerBtn" disabled style="padding: 0.6rem; font-size: 1rem; font-weight: 600;">Create account</button>
