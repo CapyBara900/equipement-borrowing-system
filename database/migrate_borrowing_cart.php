@@ -15,7 +15,7 @@ try {
         'equipment quantities' => 'SELECT COUNT(*) FROM equipment WHERE total_quantity < 1 OR available_quantity > total_quantity',
         'request quantities' => 'SELECT COUNT(*) FROM borrowing_requests WHERE requested_quantity < 1',
         'return quantities' => 'SELECT COUNT(*) FROM returns WHERE returned_quantity < 1',
-        'active reservations' => "SELECT COUNT(*) FROM (SELECT e.equipment_id FROM equipment e LEFT JOIN borrowing_requests r ON r.equipment_id=e.equipment_id AND r.status IN ('pending','approved') GROUP BY e.equipment_id HAVING MAX(e.available_quantity) + COALESCE(SUM(r.requested_quantity),0) > MAX(e.total_quantity)) invalid_stock",
+        'active reservations' => "SELECT COUNT(*) FROM (SELECT e.equipment_id FROM equipment e LEFT JOIN borrowing_requests r ON r.equipment_id=e.equipment_id AND r.status IN ('pending','approved','borrowed') GROUP BY e.equipment_id HAVING MAX(e.available_quantity) + COALESCE(SUM(r.requested_quantity),0) > MAX(e.total_quantity)) invalid_stock",
     ];
     foreach ($checks as $label => $query) if ((int)$db->query($query)->fetchColumn() !== 0) throw new RuntimeException("Existing $label are inconsistent. Resolve them explicitly before migration; this script does not rewrite history or stock.");
     // Do not silently accept a partially compatible externally created table.
@@ -33,6 +33,13 @@ try {
         if ($sql === '') continue;
         if ($when) {
             [$kind,$table,$name]=$when;
+            // Borrowing Management replaces this FK with a restrictive relationship.
+            // Reuse it by its columns, so rerunning this older migration cannot add
+            // a duplicate SET NULL foreign key under the retired constraint name.
+            if ($kind === 'constraint' && $table === 'borrowing_requests' && $name === 'fk_request_checkout') {
+                $relationship = $db->query("SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='borrowing_requests' AND COLUMN_NAME='checkout_id' AND REFERENCED_TABLE_NAME='borrowing_checkouts' AND REFERENCED_COLUMN_NAME='checkout_id'")->fetchColumn();
+                if ((int)$relationship > 0) { echo "SKIP existing checkout relationship\n"; continue; }
+            }
             if ($name === 'uq_requests_checkout_equipment' && (int)$db->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='borrowing_requests' AND INDEX_NAME='uq_requests_checkout_dates'")->fetchColumn() > 0) { echo "SKIP superseded equipment-only group index\n"; continue; }
             if ($kind === 'enum') {
                 $query=$db->prepare("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME='status'");

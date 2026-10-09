@@ -194,7 +194,7 @@ async function renderCustomerView() {
   try {
     ({ data: requests } = await Api.listRequests({ limit: 50 }));
   } catch (err) {
-    host.innerHTML = emptyState("Couldn't load your requests", err.message);
+    host.innerHTML = emptyState("Couldn't load your borrowings", err.message);
     return;
   }
 

@@ -83,8 +83,10 @@ const Api = {
   // --- borrowing ---
   getPickupWindow: () => request('borrowing-settings/index.php'),
   listRequests: (q) => request('requests/index.php', { query: q }),
+  borrowingCapabilities: () => request('requests/index.php', { query: { capabilities: 1 } }),
   createRequest: (d) => request('requests/index.php', { method: 'POST', body: d }),
   decideRequest: (d) => request('requests/index.php', { method: 'PUT', body: d }),
+  pickupRequest: (id) => request('requests/index.php', { method: 'PUT', body: { request_id: id, action: 'pickup' } }),
   cancelRequest: (id) => request('requests/index.php', { method: 'DELETE', query: { id } }),
 
   listReturns: () => request('returns/index.php'),

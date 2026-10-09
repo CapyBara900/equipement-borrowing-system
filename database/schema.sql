@@ -80,12 +80,18 @@ CREATE TABLE borrowing_requests (
     borrow_date           DATE,
     expected_return_date  DATE,
     requested_quantity    INT UNSIGNED NOT NULL DEFAULT 1,
-    status                ENUM('pending', 'approved', 'rejected', 'returned') NOT NULL DEFAULT 'pending',
+    status                ENUM('pending', 'approved', 'rejected', 'returned', 'cancelled', 'borrowed') NOT NULL DEFAULT 'pending',
+    picked_up_at          DATETIME NULL DEFAULT NULL,
+    picked_up_by_staff_id INT NULL DEFAULT NULL,
     CONSTRAINT fk_request_user FOREIGN KEY (user_id)
         REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_request_equipment FOREIGN KEY (equipment_id)
         REFERENCES equipment(equipment_id) ON DELETE CASCADE,
-    CONSTRAINT chk_request_quantity_positive CHECK (requested_quantity >= 1)
+    CONSTRAINT fk_request_pickup_staff FOREIGN KEY (picked_up_by_staff_id)
+        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    CONSTRAINT chk_request_quantity_positive CHECK (requested_quantity >= 1),
+    CONSTRAINT chk_request_pickup_evidence CHECK ((picked_up_at IS NULL AND picked_up_by_staff_id IS NULL AND status <> 'borrowed') OR (picked_up_at IS NOT NULL AND picked_up_by_staff_id IS NOT NULL AND status IN ('borrowed','returned'))),
+    CONSTRAINT chk_request_pickup_dates CHECK (picked_up_at IS NULL OR (borrow_date IS NOT NULL AND expected_return_date IS NOT NULL AND DATE(picked_up_at) >= borrow_date AND DATE(picked_up_at) <= expected_return_date))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -142,6 +148,8 @@ CREATE INDEX idx_equipment_category ON equipment(category_id);
 CREATE INDEX idx_requests_user ON borrowing_requests(user_id);
 CREATE INDEX idx_requests_equipment ON borrowing_requests(equipment_id);
 CREATE INDEX idx_requests_status ON borrowing_requests(status);
+CREATE INDEX idx_requests_pickup_staff ON borrowing_requests(picked_up_by_staff_id);
+CREATE INDEX idx_requests_user_status_date ON borrowing_requests(user_id,status,request_date);
 CREATE INDEX idx_condition_equipment ON equipment_condition_reports(equipment_id);
 CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
 

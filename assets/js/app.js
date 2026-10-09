@@ -41,8 +41,8 @@ const NAV_LINKS = [
   { href: 'dashboard.html', label: 'Overview', roles: ['admin', 'staff', 'customer'] },
   { href: 'equipment.html', label: 'Equipment', roles: ['admin', 'staff', 'customer'] },
   { href: 'cart.html', label: 'Borrowing Cart', roles: ['customer'], cart: true },
-  { href: 'requests.html', label: 'Requests', roles: ['admin', 'staff', 'customer'] },
-  { href: 'returns.html', label: 'Returns', roles: ['admin', 'staff'] },
+  { href: 'requests.html', label: 'Borrowing Management', roles: ['admin', 'staff'] },
+  { href: 'requests.html', label: 'My Borrowings', roles: ['customer'] },
   { href: 'notifications.html', label: 'Notifications', roles: ['customer'], badge: true },
   { href: 'admin.html', label: 'People & categories', roles: ['admin'] },
 ];

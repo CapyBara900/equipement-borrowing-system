@@ -18,7 +18,7 @@ SET available_quantity = LEAST(
             SELECT SUM(r.requested_quantity)
             FROM borrowing_requests r
             WHERE r.equipment_id = equipment.equipment_id
-              AND r.status IN ('pending', 'approved')
+              AND r.status IN ('pending', 'approved', 'borrowed')
         ), 0)
     )
 );

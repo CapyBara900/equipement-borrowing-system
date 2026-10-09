@@ -62,4 +62,4 @@ ALTER TABLE borrowing_requests ADD INDEX idx_requests_equipment_status (equipmen
 
 -- Retain cancelled item history instead of deleting borrowing records.
 -- @when enum borrowing_requests cancelled
-ALTER TABLE borrowing_requests MODIFY COLUMN status ENUM('pending','approved','rejected','returned','cancelled') NOT NULL DEFAULT 'pending';
+ALTER TABLE borrowing_requests MODIFY COLUMN status ENUM('pending','approved','rejected','returned','cancelled','borrowed') NOT NULL DEFAULT 'pending';

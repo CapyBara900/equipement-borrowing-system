@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/../includes/borrowing_history.php';
 require __DIR__.'/../config/database.php';require __DIR__.'/../includes/auth_middleware.php';require __DIR__.'/../includes/borrowing_cart.php';require __DIR__.'/../includes/notifications.php';
 class CartResult extends Exception{public function __construct(public int $status,public array $payload){}}
 function sendJson(int $status,array $payload):void{throw new CartResult($status,$payload);}function getJsonBody():array{return $GLOBALS['cartTestBody'];}function cleanText(?string $value):string{return trim(strip_tags($value??''));}
@@ -52,8 +53,9 @@ try{
  $group=$result['data']['checkout_id'];check(count(api('requests/index.php','GET',[],['checkout_id'=>$group])->payload['data'])===3,'My Borrowings lost group members');
  check(api('requests/index.php','GET',[],['checkout_id'=>$group],'customer',$other)->payload['data']===[],'Other customer listed group');
  check(api('requests/index.php','DELETE',[],['id'=>$requests[0]['request_id']])->status===200&&$stock($a)===3,'Cancel restored wrong quantity');check(api('requests/index.php','DELETE',[],['id'=>$requests[0]['request_id']])->status===409,'Repeat cancel allowed');
- api('requests/index.php','PUT',['request_id'=>$requests[1]['request_id'],'status'=>'approved'],[],'staff');check($stock($a)===3,'Approval deducted again');check(api('returns/index.php','POST',['request_id'=>$requests[1]['request_id'],'condition_status'=>'good'],[],'staff')->status===201&&$stock($a)===5,'Good return failed');
- api('requests/index.php','PUT',['request_id'=>$requests[2]['request_id'],'status'=>'rejected'],[],'staff');check($stock($b)===5,'Rejection failed');
+ check(api('requests/index.php','PUT',['request_id'=>$requests[1]['request_id'],'status'=>'approved'],[],'staff')->status===403&&$stock($a)===3,'Non-admin approval altered stock');
+ check(api('requests/index.php','DELETE',[],['id'=>$requests[1]['request_id']])->status===200&&$stock($a)===5,'Customer cancellation did not release dated reservation');
+ check(api('requests/index.php','DELETE',[],['id'=>$requests[2]['request_id']])->status===200&&$stock($b)===5,'Customer cancellation did not restore second equipment');
  // Pre-upgrade success keys remain replayable with their original payload hashes.
  $legacy=['items'=>[['equipment_id'=>$b,'requested_quantity'=>1]],'borrow_date'=>$day(0),'expected_return_date'=>$day(1)];$oldKey=bin2hex(random_bytes(16));$oldResult=['success'=>true,'confirmed_equipment_ids'=>[$b],'data'=>['request_id'=>$requests[2]['request_id']]];
  $db->prepare('INSERT INTO borrowing_checkouts(user_id,idempotency_key,payload_hash,response_json,borrow_date,expected_return_date) VALUES(?,?,?,?,?,?)')->execute([$userId,$oldKey,hash('sha256',json_encode($legacy)),json_encode($oldResult),$day(0),$day(1)]);
@@ -63,5 +65,18 @@ try{
  $import=['items'=>[array_replace($add,['borrow_date'=>$day(3),'expected_return_date'=>$day(3)])]];check(api('cart/import.php','POST',$import)->status===200,'Dated import failed');$before=readBorrowingCart($db,$userId);check(api('cart/import.php','POST',$import)->payload['data']===$before,'Import added twice');
  $import['items'][]=['equipment_id'=>$c,'quantity'=>1];check(api('cart/import.php','POST',$import)->status===400&&readBorrowingCart($db,$userId)===$before,'Undated import changed cart');
  try{$db->prepare('INSERT INTO borrowing_cart_items(user_id,equipment_id,quantity,borrow_date,expected_return_date) VALUES(?,?,?,?,?)')->execute([$userId,$a,1,$day(3),$day(3)]);throw new RuntimeException('Database accepted duplicate dated identity');}catch(PDOException $e){}
- echo "PASS: required dates/quantities, same-day returns, independent dated entries/edits, ownership, aggregate stock, atomic rollback, entry-specific removal, persistent dates, old/new idempotency, imports, and unchanged approval/restoration workflow.\n";
-}finally{if($db->inTransaction())$db->rollBack();foreach($equipment as$id)$db->prepare('DELETE FROM equipment WHERE equipment_id=? AND equipment_name LIKE ?')->execute([$id,'Dated cart fixture %']);foreach($users as$id)$db->prepare('DELETE FROM users WHERE user_id=? AND name=?')->execute([$id,'Dated cart fixture']);}
+ echo "PASS: required dates/quantities, same-day returns, independent dated entries/edits, ownership, aggregate stock, atomic rollback, entry-specific removal, persistent dates, old/new idempotency, imports, pending cancellation and administrator-only decisions.\n";
+} finally {
+ if ($db->inTransaction()) $db->rollBack();
+ foreach ($equipment as $id) {
+  if (borrowingAuditSchema($db)['audit_available']) $db->prepare('DELETE FROM borrowing_status_history WHERE request_id IN (SELECT request_id FROM borrowing_requests WHERE equipment_id=?)')->execute([$id]);
+  $db->prepare('DELETE FROM returns WHERE request_id IN (SELECT request_id FROM borrowing_requests WHERE equipment_id=?)')->execute([$id]);
+  $db->prepare('DELETE FROM equipment_condition_reports WHERE equipment_id=?')->execute([$id]);
+  $db->prepare('DELETE FROM borrowing_requests WHERE equipment_id=?')->execute([$id]);
+  $db->prepare('DELETE FROM equipment WHERE equipment_id=? AND equipment_name LIKE ?')->execute([$id,'Dated cart fixture %']);
+ }
+ foreach ($users as $id) {
+  $db->prepare('DELETE FROM borrowing_checkouts WHERE user_id=?')->execute([$id]);
+  $db->prepare('DELETE FROM users WHERE user_id=? AND name=?')->execute([$id,'Dated cart fixture']);
+ }
+}

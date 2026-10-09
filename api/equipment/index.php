@@ -52,7 +52,7 @@ switch ($method) {
                        e.serial_number,
                        CASE WHEN e.available_quantity > 0 THEN 'available' ELSE 'unavailable' END AS status,
                        e.status AS equipment_status,
-                       GREATEST(0, e.total_quantity - e.available_quantity - COALESCE((SELECT SUM(active.requested_quantity) FROM borrowing_requests active WHERE active.equipment_id = e.equipment_id AND active.status IN ('pending','approved')), 0)) AS held_quantity,
+                       GREATEST(0, e.total_quantity - e.available_quantity - COALESCE((SELECT SUM(active.requested_quantity) FROM borrowing_requests active WHERE active.equipment_id = e.equipment_id AND active.status IN ('pending','approved','borrowed')), 0)) AS held_quantity,
                        e.total_quantity, e.available_quantity, e.borrowing_time_limit_days,
                        br.request_id  AS pending_request_id,
                        br.user_id     AS pending_user_id,
@@ -230,7 +230,7 @@ switch ($method) {
             $unavailable = (int)$current['total_quantity'] - (int)$current['available_quantity'];
             if ($releaseQuantity > 0) {
                 // The locked equipment row serializes this with reservation/restoration.
-                $active = $db->prepare("SELECT COALESCE(SUM(requested_quantity),0) FROM borrowing_requests WHERE equipment_id = ? AND status IN ('pending','approved')");
+                $active = $db->prepare("SELECT COALESCE(SUM(requested_quantity),0) FROM borrowing_requests WHERE equipment_id = ? AND status IN ('pending','approved','borrowed')");
                 $active->execute([$id]);
                 $held = $unavailable - (int)$active->fetchColumn();
                 if ($releaseQuantity > $held) {
@@ -278,10 +278,25 @@ switch ($method) {
         if (!$id) {
             sendJson(400, ['success' => false, 'message' => 'id query param is required.']);
         }
-        $stmt = $db->prepare('DELETE FROM equipment WHERE equipment_id = :id');
-        $stmt->execute(['id' => $id]);
-        if ($stmt->rowCount() === 0) {
-            sendJson(404, ['success' => false, 'message' => 'Equipment not found.']);
+        try {
+            $db->beginTransaction();
+            $lock = $db->prepare('SELECT equipment_id FROM equipment WHERE equipment_id = :id FOR UPDATE');
+            $lock->execute(['id' => $id]);
+            if (!$lock->fetch()) {
+                $db->rollBack();
+                sendJson(404, ['success' => false, 'message' => 'Equipment not found.']);
+            }
+            $history = $db->prepare('SELECT request_id FROM borrowing_requests WHERE equipment_id = :id LIMIT 1');
+            $history->execute(['id' => $id]);
+            if ($history->fetch()) {
+                $db->rollBack();
+                sendJson(409, ['success' => false, 'message' => 'Equipment with borrowing history cannot be deleted.', 'code' => 'BORROWING_HISTORY_EXISTS']);
+            }
+            $db->prepare('DELETE FROM equipment WHERE equipment_id = :id')->execute(['id' => $id]);
+            $db->commit();
+        } catch (PDOException $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendJson(409, ['success' => false, 'message' => 'Could not delete equipment. Its existing records were preserved.', 'code' => 'EQUIPMENT_DELETE_CONFLICT']);
         }
         sendJson(200, ['success' => true, 'message' => 'Equipment deleted.']);
         break;

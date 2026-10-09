@@ -48,6 +48,12 @@ if ($mode==='setup') {
     echo 'PASS';
 } elseif ($mode==='cleanup') {
     $fixture=json_decode($argv[2],true);
-    foreach ($fixture['equipment'] as $id) $db->prepare('DELETE FROM equipment WHERE equipment_id=? AND equipment_name=?')->execute([$id,'Cart batch concurrency fixture']);
-    foreach ($fixture['users'] as $id) $db->prepare('DELETE FROM users WHERE user_id=? AND name=?')->execute([$id,'Cart batch concurrency fixture']);
+    foreach ($fixture['equipment'] as $id) {
+        $db->prepare('DELETE FROM borrowing_requests WHERE equipment_id=?')->execute([$id]);
+        $db->prepare('DELETE FROM equipment WHERE equipment_id=? AND equipment_name=?')->execute([$id,'Cart batch concurrency fixture']);
+    }
+    foreach ($fixture['users'] as $id) {
+        $db->prepare('DELETE FROM borrowing_checkouts WHERE user_id=?')->execute([$id]);
+        $db->prepare('DELETE FROM users WHERE user_id=? AND name=?')->execute([$id,'Cart batch concurrency fixture']);
+    }
 } else throw new RuntimeException('Invalid mode.');

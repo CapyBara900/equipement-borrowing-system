@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/email_validation.php';
 require_once __DIR__ . '/../../includes/password_validation.php';
+require_once __DIR__ . '/../../includes/borrowing_management.php';
 
 const USER_SELECT = '
     SELECT u.user_id, u.name, u.email, r.role_name AS role, u.created_at,
@@ -132,13 +133,35 @@ switch ($method) {
         if ((int)$id === (int)$current['user_id']) {
             sendJson(400, ['success' => false, 'message' => 'You cannot delete your own account.']);
         }
-        $stmt = $db->prepare('SELECT user_id FROM users WHERE user_id = :id');
-        $stmt->execute(['id' => $id]);
-        if (!$stmt->fetch()) {
-            sendJson(404, ['success' => false, 'message' => 'User not found.']);
+        try {
+            $db->beginTransaction();
+            $stmt = $db->prepare('SELECT user_id FROM users WHERE user_id = :id FOR UPDATE');
+            $stmt->execute(['id' => $id]);
+            if (!$stmt->fetch()) {
+                $db->rollBack();
+                sendJson(404, ['success' => false, 'message' => 'User not found.']);
+            }
+            $history = $db->prepare('SELECT request_id FROM borrowing_requests WHERE user_id = :id LIMIT 1');
+            $history->execute(['id' => $id]);
+            if ($history->fetch()) {
+                $db->rollBack();
+                sendJson(409, ['success' => false, 'message' => 'A customer with borrowing history cannot be deleted.', 'code' => 'BORROWING_HISTORY_EXISTS']);
+            }
+            $auditSchema = borrowingAuditSchema($db);
+            if (isset($auditSchema['columns']['changed_by_user_id'])) {
+                $auditActor = $db->prepare('SELECT history_id FROM borrowing_status_history WHERE changed_by_user_id = :id LIMIT 1');
+                $auditActor->execute(['id' => $id]);
+                if ($auditActor->fetch()) {
+                    $db->rollBack();
+                    sendJson(409, ['success' => false, 'message' => 'An account recorded in borrowing status history cannot be deleted.', 'code' => 'BORROWING_HISTORY_EXISTS']);
+                }
+            }
+            $db->prepare('DELETE FROM users WHERE user_id = :id')->execute(['id' => $id]);
+            $db->commit();
+        } catch (PDOException $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendJson(409, ['success' => false, 'message' => 'This account is referenced by existing records and could not be deleted.', 'code' => 'USER_DELETE_CONFLICT']);
         }
-        $stmt = $db->prepare('DELETE FROM users WHERE user_id = :id');
-        $stmt->execute(['id' => $id]);
         sendJson(200, ['success' => true, 'message' => 'User deleted.']);
         break;
 

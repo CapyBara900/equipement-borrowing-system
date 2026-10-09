@@ -764,3 +764,56 @@ td .empty {
 #checkout { scroll-margin-top:4rem; }
 @media(max-width:1199.98px) { .cart-layout { grid-template-columns:1fr; } .cart-summary { position:static; } }
 @media(max-width:575.98px) { .cart-row { flex-direction:row; flex-wrap:wrap; } .cart-row .grow { flex:1; } .cart-controls { flex:1 0 100%; } .cart-stepper input { width:90px; } }
+
+/* My Borrowings reuses the existing panels, buttons, and status colors. */
+.borrowing-tabs:not([hidden]) { display:flex; overflow-x:auto; overscroll-behavior-x:contain; gap:.25rem; padding:0 .65rem; }
+.borrowing-tab { flex:1 0 auto; border:0; border-bottom:3px solid transparent; background:transparent; padding:1rem .85rem .85rem; color:var(--slate); font:inherit; font-weight:500; white-space:nowrap; }
+.borrowing-tab:hover { color:var(--ink); background:var(--surface); }
+.borrowing-tab.active { color:var(--info); border-bottom-color:var(--info); font-weight:600; }
+.borrowing-tab:focus-visible { outline-offset:-4px; }
+.borrowing-toolbar:not([hidden]) { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
+.borrowing-toolbar p, .borrowing-card-head p { margin:0; }
+.borrowing-meta { font-size:.85rem; color:var(--slate); }
+.borrowing-card { margin-bottom:1rem; overflow:hidden; }
+.borrowing-card-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:.75rem; padding:1rem 1.1rem; border-bottom:1px solid var(--line); }
+.borrowing-card-head h2 { font-size:.95rem; margin:0 0 .2rem; overflow-wrap:anywhere; }
+.borrowing-statuses { display:flex; flex-wrap:wrap; gap:.4rem; }
+.borrowing-card .pill, #borrowingDetailsModal .pill { text-transform:capitalize; }
+.borrowing-card .p-cancelled, #borrowingDetailsModal .p-cancelled { color:var(--slate); }
+.borrowing-item { padding:1rem 1.1rem; }
+.borrowing-item + .borrowing-item { border-top:1px solid var(--line); }
+.borrowing-item-head { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; margin-bottom:.85rem; }
+.borrowing-item-head h3 { font-size:1rem; margin:0; overflow-wrap:anywhere; }
+.borrowing-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem 1.25rem; margin:0; }
+.borrowing-fields dt { color:var(--slate); font-size:.8rem; font-weight:400; }
+.borrowing-fields dd { margin:.15rem 0 0; font-size:.9rem; overflow-wrap:anywhere; }
+.borrowing-item-actions { display:flex; flex-wrap:wrap; gap:.5rem; justify-content:flex-end; margin-top:.85rem; }
+.borrowing-card-foot { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:.8rem 1.1rem; border-top:1px solid var(--line); background:var(--surface); }
+#borrowingDetailsBody > .borrowing-fields { padding:0 1.1rem 1rem; border-bottom:1px solid var(--line); }
+#requestList .empty::before, #borrowingDetailsBody .empty::before { display:none; }
+@media (max-width:575.98px) {
+  .borrowing-tab { padding:.85rem .75rem .7rem; }
+  .borrowing-card-head, .borrowing-item { padding:1rem; }
+  .borrowing-fields { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; }
+  .borrowing-fields > div:first-child { grid-column:1 / -1; }
+  .borrowing-item-head { flex-wrap:wrap; }
+  .borrowing-card-foot { padding:.8rem 1rem; }
+}
+
+#pager[hidden] { display:none !important; }
+
+/* Borrowing Management shares customer transaction cards and admin form styles. */
+.borrowing-customer { font-size:.95rem; font-weight:600; overflow-wrap:anywhere; }
+.borrowing-action-hint { margin:.5rem 0 0; color:var(--slate); font-size:.8rem; text-align:right; }
+.borrowing-history { margin-top:1rem; padding-top:.85rem; border-top:1px solid var(--line); }
+.borrowing-history h4 { font-size:.85rem; margin-bottom:.65rem; }
+.borrowing-history ol { list-style:none; padding:0 0 0 .85rem; margin:0 0 .75rem; border-left:2px solid var(--line); }
+.borrowing-history li { margin:.6rem 0; font-size:.85rem; }
+.borrowing-history li strong, .borrowing-history li > span { display:block; overflow-wrap:anywhere; }
+.borrowing-history li > span { color:var(--slate); }
+.borrowing-item-actions .btn-primary:disabled { background:var(--ink); border-color:var(--ink); }
+#borrowingFeedback, #returnError, #returnItemName { overflow-wrap:anywhere; }
+@media (max-width:575.98px) {
+  .borrowing-item-actions .btn { flex:1 1 auto; }
+  .borrowing-action-hint { text-align:left; }
+}

@@ -15,8 +15,8 @@ Plain PHP (PDO) backend on **MySQL**, built for XAMPP + phpMyAdmin.
    collation used for normalized email uniqueness.
    Run `database/migration_equipment_quantities.sql` as well when upgrading an
    existing database; it adds total/available inventory and request/return
-   quantities. The migration also repairs available stock from active pending
-   and approved requests, rather than treating the legacy equipment status as
+   quantities. The migration also repairs available stock from active pending,
+   approved, and borrowed requests, rather than treating the legacy equipment status as
    a quantity.
 
    Run `database/migration_borrowing_time_limit.sql` once for existing databases
@@ -57,6 +57,26 @@ separate dated entries for the same equipment. Existing undated cart entries
 remain as drafts requiring dates before checkout. Fresh installations also run both migrations after schema.sql. Do not rerun
 schema.sql on an existing database. See [BORROWING_CART.md](BORROWING_CART.md)
 for the schema/API contract and MySQL, concurrency, and real HTTP tests.
+
+
+## My Borrowings database upgrade
+
+After the borrowing cart migrations, run:
+
+```text
+C:/xampp/php/php.exe database/migrate_my_borrowings.php --dry-run
+C:/xampp/php/php.exe database/migrate_my_borrowings.php
+```
+
+This additive migration enables a distinct Borrowed status with actual pickup
+attribution, integrity checks, and a customer/status history index. It preserves
+all historical statuses, quantities, dates, and checkout groups. The CLI runner
+preflights the schema/data, supports safe reruns, and verifies original-record
+fingerprints. Fresh installations also run it after the two cart migrations;
+never rerun schema.sql against an existing database. See
+[MY_BORROWINGS_DATABASE.md](MY_BORROWINGS_DATABASE.md) for the schema assessment,
+changes, and verification, and [MY_BORROWINGS_BACKEND.md](MY_BORROWINGS_BACKEND.md)
+for the API contract.
 
 ## 3. Create the first admin account
 ```
@@ -101,7 +121,7 @@ ebs/
 | users | user_id | role_id → roles.role_id | name, email, password_hash, created_at |
 | categories | category_id | — | category_name, description |
 | equipment | equipment_id | category_id → categories.category_id | equipment_name, description, serial_number, status |
-| borrowing_requests | request_id | user_id → users, equipment_id → equipment, nullable checkout_id → borrowing_checkouts | request_date, borrow_date, expected_return_date, requested_quantity, status |
+| borrowing_requests | request_id | user_id → users, equipment_id → equipment, nullable checkout_id → borrowing_checkouts, nullable picked_up_by_staff_id → users | request_date, borrow_date, expected_return_date, requested_quantity, status, picked_up_at |
 | borrowing_cart_items | cart_item_id | user_id → users, equipment_id → equipment | quantity, borrow_date, expected_return_date, created_at, updated_at; unique customer/equipment/dates |
 | borrowing_checkouts | checkout_id | user_id → users | idempotency_key, payload_hash, response_json, borrow_date, expected_return_date, created_at |
 | returns | return_id | request_id → borrowing_requests, processed_by_staff_id → users | actual_return_date, remarks |
@@ -147,8 +167,7 @@ reloads a second time to get data.
 | index.html | anyone | Sign in and register, with inline validation |
 | dashboard.html | all roles | Staff/admin get desk-wide reporting and a chart; customers get their own loans and due dates |
 | equipment.html | all roles | Catalog with search, category/status filters, sorting, pagination; request to borrow; admin CRUD; QR labels |
-| requests.html | all roles | Customers see their own requests; staff/admin approve or decline |
-| returns.html | staff, admin | Check items in, record condition, view return history |
+| requests.html | all roles | Customer My Borrowings history with status tabs; staff/admin manage approvals, pickups, returns with condition/remarks, and returned transaction details |
 | notifications.html | all roles | Status updates, mark as read |
 | admin.html | admin | Manage accounts/roles and equipment categories |
 
@@ -225,3 +244,11 @@ Verification:
 C:\xampp\php\php.exe tests\category_management_api.php
 node tests/category_management_validation.cjs
 ```
+
+## Borrowing Management database upgrade
+
+The additive [Borrowing Management migration](BORROWING_MANAGEMENT_DATABASE.md)
+adds complete action history, preserves checkout ownership and borrowing records,
+and keeps the existing stock reservations. Use `database/migrate_borrowing_management.php`
+with `--dry-run` to inspect the plan, then run it without that flag. Existing databases
+must use the migration runners rather than rerunning `database/schema.sql`.
