@@ -78,14 +78,15 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 (async () => {
   const staff = harness('staff'), admin = harness('admin'), customer = harness('customer');
   for (const client of [staff, admin, customer]) await client.execute('CategoryStore.start(updateCategoryOptions)');
-  assert.equal(staff.element('addCategoryBtn').hidden, false);
+  assert.equal(staff.element('addCategoryBtn').hidden, true);
+  assert.equal(staff.element('categoryList').listeners.click, undefined);
   assert.equal(admin.element('addCategoryBtn').hidden, false);
   assert.equal(customer.element('addCategoryBtn').hidden, true);
   assert.equal(customer.element('categoryList').listeners.click, undefined);
   assert.match(customer.element('categoryFilter').innerHTML, /Audio Visual/);
   assert.equal(streams.length, 3);
   const submit = client => client.element('categoryForm').listeners.submit({ preventDefault() {} });
-  for (const client of [admin, staff]) {
+  for (const client of [admin]) {
     client.element('addCategoryBtn').listeners.click();
     assert.equal(client.element('categorySubmit').disabled, true);
     for (const name of ['', ' ', '---', '<b>Tools</b>', 'Tools\0', 'x'.repeat(101)]) {
@@ -109,27 +110,27 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
   }
   function roleName(client) { return client === admin ? 'Admin' : 'Staff'; }
   for (const client of [staff, admin, customer]) client.element('categoryFilter').value = '1';
-  staff.element('editCategory').value = '1';
+  admin.element('editCategory').value = '1';
   // Open the real edit handler and rename. The chosen category ID stays selected everywhere.
-  staff.element('categoryList').listeners.click({ target: { closest: selector => selector === '[data-edit-category]' ? { dataset: { editCategory: '1' } } : null } });
+  admin.element('categoryList').listeners.click({ target: { closest: selector => selector === '[data-edit-category]' ? { dataset: { editCategory: '1' } } : null } });
   await flush();
-  assert.equal(staff.element('categoryName').value, 'Audio Visual');
-  staff.element('categoryName').value = 'Audio & Visual'; await submit(staff); await flush();
+  assert.equal(admin.element('categoryName').value, 'Audio Visual');
+  admin.element('categoryName').value = 'Audio & Visual'; await submit(admin); await flush();
   for (const client of [staff, admin, customer]) {
     assert.equal(client.element('categoryFilter').value, '1');
     assert.match(client.element('categoryFilter').innerHTML, /Audio &amp; Visual/);
   }
-  assert.equal(staff.element('editCategory').value, '1');
+  assert.equal(admin.element('editCategory').value, '1');
   const beforeReload = customer.ctx.reloadCount;
   rows[0].equipment_count = 1;
   for (const stream of streams) stream.listeners.categories({ data: JSON.stringify(copy()) });
   await flush();
   assert.equal(customer.ctx.reloadCount, beforeReload, 'Count-only events must not interrupt equipment rows');
   const deleteButton = { dataset: { deleteCategory: '1' }, disabled: false };
-  const deleteClick = () => staff.element('categoryList').listeners.click({ target: { closest: selector => selector === '[data-delete-category]' ? deleteButton : null } });
+  const deleteClick = () => admin.element('categoryList').listeners.click({ target: { closest: selector => selector === '[data-delete-category]' ? deleteButton : null } });
   const beforeDelete = writes.length; deleteClick(); await flush();
   assert.equal(writes.length, beforeDelete);
-  assert.match(staff.notifications.at(-1).message, /Reassign/);
+  assert.match(admin.notifications.at(-1).message, /Reassign/);
   rows[0].equipment_count = 0;
   for (const stream of streams) stream.listeners.categories({ data: JSON.stringify(copy()) });
   await flush(); deleteClick(); await flush();
@@ -149,5 +150,5 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
   await customer.timers[0](); await flush();
   assert.match(customer.element('categoryFilter').innerHTML, /Polling Tools/);
   assert.ok(loads === 0);
-  console.log('PASS: admin/staff controls, customer read-only view, validation/error recovery, create/rename/delete, assignment guards, preserved selections, instant cross-tab updates, remote events, polling fallback, and no duplicate dropdown options.');
+  console.log('PASS: admin controls, blocked staff controls, customer read-only view, validation/error recovery, create/rename/delete, assignment guards, preserved selections, instant cross-tab updates, remote events, polling fallback, and no duplicate dropdown options.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

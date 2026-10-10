@@ -39,7 +39,7 @@ function toast(message, kind = 'ok') {
 
 const NAV_LINKS = [
   { href: 'dashboard.html', label: 'Overview', roles: ['admin', 'staff', 'customer'] },
-  { href: 'equipment.html', label: 'Equipment', roles: ['admin', 'staff', 'customer'] },
+  { href: 'equipment.php', label: 'Equipment', roles: ['admin', 'customer'] },
   { href: 'cart.html', label: 'Borrowing Cart', roles: ['customer'], cart: true },
   { href: 'requests.html', label: 'Borrowing Management', roles: ['admin', 'staff'] },
   { href: 'requests.html', label: 'My Borrowings', roles: ['customer'] },
@@ -72,10 +72,12 @@ function navMarkup(user, unreadCount) {
 
 async function renderShell(user) {
   let unread = 0;
-  try {
-    const res = await Api.listNotifications({ unread_only: '1' });
-    unread = res.data.length;
-  } catch (e) { /* notifications are non-critical chrome */ }
+  if (user.role === 'customer') {
+    try {
+      const res = await Api.listNotifications({ unread_only: '1' });
+      unread = res.data.length;
+    } catch (e) { /* notifications are non-critical chrome */ }
+  }
 
   const markup = navMarkup(user, unread);
   const rail = document.querySelector('.rail');
@@ -104,7 +106,9 @@ async function requireSession(allowedRoles = null) {
     location.href = 'index.html';
     throw err;
   }
-  if (allowedRoles && !allowedRoles.includes(CURRENT_USER.role)) {
+  const staffPageAllowed = CURRENT_USER.role !== 'staff'
+    || ['dashboard.html', 'requests.html'].includes(location.pathname.split('/').pop());
+  if (!staffPageAllowed || (allowedRoles && !allowedRoles.includes(CURRENT_USER.role))) {
     document.querySelector('.main').innerHTML =
       `<div class="empty"><strong>This page isn't available for your account</strong>
        Ask an administrator if you think you should have access.</div>`;

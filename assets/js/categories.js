@@ -1,4 +1,4 @@
-/* Shared category catalog and editor for admin/staff; customers subscribe read-only. */
+/* Shared category catalog and editor for admins; customers subscribe read-only. */
 const CategoryStore = (() => {
   let rows = [], signature = '', started = false, stream = null, channel = null, pending = null;
   let generation = 0;
@@ -116,7 +116,7 @@ const CategoryManager = (() => {
     finally { busy = false; button.disabled = false; }
   }
   function init(user) {
-    if (initialized || !['admin', 'staff'].includes(user.role)) return;
+    if (initialized || user.role !== 'admin') return;
     initialized = true;
     if (!document.getElementById('categoryModal')) document.body.insertAdjacentHTML('beforeend', `
 <!-- Category modal -->

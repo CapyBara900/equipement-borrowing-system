@@ -38,7 +38,7 @@ const equipment = fs.readFileSync(path.join(root, 'assets/js/equipment.js'), 'ut
 const editor = equipment.slice(equipment.indexOf('const editModal ='), equipment.indexOf('async function removeEquipment('));
 vm.runInContext(editor + '\nasync function loadEquipment() {}', context);
 (async () => {
-  for (const role of ['admin', 'staff']) {
+  for (const role of ['admin']) {
     context.user = { role };
     await context.openEditor(42);
     const field = element('editBorrowingLimit');
@@ -71,5 +71,13 @@ vm.runInContext(editor + '\nasync function loadEquipment() {}', context);
       assert.equal(stored.total_quantity, '3');
     }
   }
-  console.log('PASS: all 1–3650 values, invalid inputs, error clearing, numeric submission, and reopening for admin/staff.');
+  for (const role of ['staff', 'customer']) {
+    context.user = { role };
+    const before = submitted.length;
+    element('editBorrowingLimit').value = '7';
+    await context.openEditor(42);
+    await element('editForm').listeners.submit({ preventDefault() {} });
+    assert.equal(submitted.length, before, role + ' must not save equipment');
+  }
+  console.log('PASS: all 1–3650 values, invalid inputs, error clearing, numeric submission, and reopening for admin; staff/customer editor actions blocked.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1,15 +1,7 @@
 <?php
 // Shared setup included at the top of every api/*.php endpoint.
 
-// Session cookies should not be readable by JavaScript and should not be sent cross-site.
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_set_cookie_params([
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure'   => true,
-    ]);
-    session_start();
-}
+require_once __DIR__ . '/session.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';

@@ -110,7 +110,7 @@ const Api = {
 
 /* --------------------------------------------------------------------------
    External API: QR Server (api.qrserver.com).
-   Staff can print a QR label for an item so it can be scanned at the desk.
+   Admins can print a QR label for an item so it can be scanned at the desk.
    Fetched as a blob and turned into an object URL — a real request/receive/use
    cycle against a third-party API, not just an <img src>.
    -------------------------------------------------------------------------- */

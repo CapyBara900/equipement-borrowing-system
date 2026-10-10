@@ -1,4 +1,4 @@
-/* Equipment catalog, borrowing, and admin/staff equipment/category management.
+/* Equipment catalog, borrowing, and admin equipment/category management.
    Everything refreshes through fetch — no page reloads. */
 
 const PAGE_SIZE = 10;
@@ -9,7 +9,7 @@ let user = null;
 let cartCatalog = [];
 
 (async function () {
-  user = await requireSession();
+  user = await requireSession(['admin', 'customer']);
 
   if (user.role === 'customer') {
     ['pending', 'borrowed', 'maintenance'].forEach(status => {
@@ -18,7 +18,7 @@ let cartCatalog = [];
     });
   }
 
-  if (user.role === 'admin' || user.role === 'staff') {
+  if (user.role === 'admin') {
     const addBtn = document.getElementById('addEquipmentBtn');
     addBtn.hidden = false;
     addBtn.addEventListener('click', () => openEditor(null));
@@ -118,9 +118,9 @@ function rowMarkup(item) {
   // Catalog status is universal: it depends only on available quantity.
   const canBorrow = item.status === 'available' && isCustomer;
   const isAdmin = user.role === 'admin';
-  const isDesk = user.role === 'admin' || user.role === 'staff';
+  const isDesk = user.role === 'admin';
 
-  // Admin/staff can still see the latest pending requester as a convenience.
+  // Admins can still see the latest pending requester as a convenience.
   const pendingRequesterBadge = isDesk && item.equipment_status === 'pending' && item.pending_user_name
     ? `<span class="badge bg-warning text-dark ms-2" title="Request #${esc(item.pending_request_id)}">
          Requested by ${esc(item.pending_user_name)}
@@ -343,6 +343,7 @@ const editRules = {
 const syncEditButton = liveValidate(editRules, 'editSubmit');
 
 async function openEditor(equipmentId) {
+  if (user?.role !== 'admin') return;
   try { await CategoryStore.refresh(); } catch (error) { toast(error.message, 'bad'); return; }
   document.getElementById('editTitle').textContent = equipmentId ? 'Edit equipment' : 'Add equipment';
   document.getElementById('editId').value = equipmentId || '';
@@ -384,6 +385,7 @@ async function openEditor(equipmentId) {
 
 document.getElementById('editForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (user?.role !== 'admin') return;
   if (!validate(editRules)) return;
 
   const id = document.getElementById('editId').value;
@@ -421,6 +423,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
 });
 
 async function removeEquipment(id, name) {
+  if (user?.role !== 'admin') return;
   if (!confirm(`Delete "${name}"? Its borrowing history goes too. This can't be undone.`)) return;
   try {
     await Api.deleteEquipment(id);
@@ -434,6 +437,7 @@ async function removeEquipment(id, name) {
 /* ---------- External API: QR label ---------- */
 
 async function showQr(serial, name) {
+  if (user?.role !== 'admin') return;
   const body = document.getElementById('qrBody');
   body.innerHTML = 'Generating…';
   bootstrap.Modal.getOrCreateInstance(document.getElementById('qrModal')).show();

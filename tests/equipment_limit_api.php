@@ -30,13 +30,13 @@ $db = (new Database())->getConnection();
 $id = null;
 try {
     $body = ['equipment_name' => 'Borrowing limit regression fixture', 'total_quantity' => 3, 'borrowing_time_limit_days' => 5];
-    $result = equipmentApi('POST', 'staff', $body);
-    verify($result->status === 201, 'Staff create failed: ' . json_encode($result->payload));
+    $result = equipmentApi('POST', 'admin', $body);
+    verify($result->status === 201, 'Admin create failed: ' . json_encode($result->payload));
     $id = $result->payload['data']['equipment_id'];
     $body['equipment_id'] = $id;
     // Represent two committed units; editing a limit must retain this availability.
     $db->prepare('UPDATE equipment SET available_quantity = 1 WHERE equipment_id = ?')->execute([$id]);
-    foreach (['admin', 'staff'] as $role) {
+    foreach (['admin'] as $role) {
         foreach ([1, 2, 5, 10, 3650, '1', '3650', '0005'] as $days) {
             $body['borrowing_time_limit_days'] = $days;
             $result = equipmentApi('PUT', $role, $body);
@@ -54,8 +54,9 @@ try {
             verify((int)$result->payload['data']['borrowing_time_limit_days'] === 5, 'Invalid save changed stored value');
         }
     }
+    foreach (['GET', 'POST', 'PUT', 'DELETE'] as $method) verify(equipmentApi($method, 'staff', $body, ['id' => $id])->status === 403, 'Staff could access equipment');
     verify(equipmentApi('PUT', 'customer', $body)->status === 403, 'Customer could edit equipment');
-    echo "PASS: admin/staff database save and reload, boundaries, invalid inputs, authorization, and quantities.\n";
+    echo "PASS: admin database save and reload, boundaries, invalid inputs, authorization, and quantities.\n";
 } finally {
     if ($db->inTransaction()) $db->rollBack();
     if ($id) $db->prepare('DELETE FROM equipment WHERE equipment_id = ?')->execute([$id]);

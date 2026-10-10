@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/category_management.php';
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') sendJson(405, ['success' => false, 'message' => 'Method not allowed.']);
-requireLogin();
+requireRole(['admin', 'customer']);
 // Streaming must never hold the PHP session lock and block normal API requests.
 session_write_close();
 header('Content-Type: text/event-stream; charset=UTF-8');

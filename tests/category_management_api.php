@@ -32,8 +32,10 @@ try {
         callApi($client, 'categories/index.php', 'POST', ['category_name' => $prefix], 401);
         callApi($client, 'auth/login.php', 'POST', ['email' => $email, 'password' => 'TemporaryTest123!']);
     }
-    foreach (['POST', 'PUT', 'DELETE'] as $method) callApi($clients['customer'], 'categories/index.php?id=1', $method, ['category_id' => 1, 'category_name' => $prefix], 403);
-    foreach (['admin', 'staff'] as $role) {
+    foreach (['staff', 'customer'] as $role) foreach (['POST', 'PUT', 'DELETE'] as $method) callApi($clients[$role], 'categories/index.php?id=1', $method, ['category_id' => 1, 'category_name' => $prefix], 403);
+    callApi($clients['staff'], 'categories/index.php', 'GET', null, 403);
+    callApi($clients['staff'], 'categories/events.php', 'GET', null, 403);
+    foreach (['admin'] as $role) {
         foreach (['', '  ', '---', '<b>Tools</b>', "Tools\0", [], true, 42, str_repeat('x', 101)] as $invalid) {
             callApi($clients[$role], 'categories/index.php', 'POST', ['category_name' => $invalid], 400);
         }
@@ -41,11 +43,11 @@ try {
         callApi($clients[$role], 'categories/index.php', 'POST', ['category_name' => $prefix, 'description' => str_repeat('d', 501)], 400);
         callApi($clients[$role], 'categories/index.php?id=0', 'GET', null, 400);
     }
-    $created = callApi($clients['staff'], 'categories/index.php', 'POST', ['category_name' => '  ' . $prefix . "  Audio\t  Visual  ", 'description' => 'Test'], 201)['data'];
+    $created = callApi($clients['admin'], 'categories/index.php', 'POST', ['category_name' => '  ' . $prefix . "  Audio\t  Visual  ", 'description' => 'Test'], 201)['data'];
     $a = (int)$created['category_id']; $categories[] = $a;
     verify($created['category_name'] === $prefix . ' Audio Visual', 'Whitespace not normalized');
     $b = (int)callApi($clients['admin'], 'categories/index.php', 'POST', ['category_name' => $prefix . ' Computing'], 201)['data']['category_id']; $categories[] = $b;
-    foreach (['admin', 'staff'] as $role) {
+    foreach (['admin'] as $role) {
         foreach ([strtolower($prefix) . ' audio visual', ' ' . $prefix . '   Audio Visual ', $prefix . "\u{00A0}Audio\u{2003}Visual"] as $duplicate) {
             $error = callApi($clients[$role], 'categories/index.php', 'POST', ['category_name' => $duplicate], 409);
             verify($error['code'] === 'CATEGORY_DUPLICATE', 'Missing duplicate error code');
@@ -58,8 +60,8 @@ try {
         callApi($clients[$role], 'categories/index.php', 'PUT', ['category_id' => 2147483647, 'category_name' => $prefix], 404);
     }
     $equipment = ['equipment_name' => $prefix, 'category_id' => $a, 'total_quantity' => 3, 'borrowing_time_limit_days' => 7];
-    $equipmentId = (int)callApi($clients['staff'], 'equipment/index.php', 'POST', $equipment, 201)['data']['equipment_id'];
-    foreach (['admin', 'staff'] as $role) {
+    $equipmentId = (int)callApi($clients['admin'], 'equipment/index.php', 'POST', $equipment, 201)['data']['equipment_id'];
+    foreach (['admin'] as $role) {
         $error = callApi($clients[$role], 'categories/index.php?id=' . $a, 'DELETE', null, 409);
         verify($error['code'] === 'CATEGORY_IN_USE' && str_contains($error['message'], 'Reassign'), 'Unclear assigned-category error');
         $item = callApi($clients['customer'], 'equipment/index.php?id=' . $equipmentId)['data'];
@@ -70,8 +72,8 @@ try {
         $db->prepare('DELETE FROM categories WHERE category_id = ?')->execute([$a]);
         throw new RuntimeException('Database accepted deletion of assigned category');
     } catch (PDOException $e) { verify((int)$e->errorInfo[1] === 1451, 'Unexpected FK failure'); }
-    callApi($clients['staff'], 'categories/index.php', 'PUT', ['category_id' => $a, 'category_name' => $prefix . ' Renamed']);
-    foreach ($clients as $client) {
+    callApi($clients['admin'], 'categories/index.php', 'PUT', ['category_id' => $a, 'category_name' => $prefix . ' Renamed']);
+    foreach ([$clients['admin'], $clients['customer']] as $client) {
         $item = callApi($client, 'equipment/index.php?id=' . $equipmentId)['data'];
         verify($item['category_name'] === $prefix . ' Renamed' && (int)$item['category_id'] === $a, 'Rename not reflected across roles');
         verify(count(callApi($client, 'equipment/index.php?category_id=' . $a)['data']) === 1, 'Category filter failed');
@@ -100,9 +102,9 @@ try {
     } finally {
         curl_multi_remove_handle($multi, $stream); curl_close($stream); curl_multi_close($multi);
     }
-    foreach (['abc', 0, [], true, 2147483647] as $invalid) callApi($clients['staff'], 'equipment/index.php', 'PUT', ['equipment_id' => $equipmentId, 'category_id' => $invalid] + $equipment, 400);
-    callApi($clients['staff'], 'equipment/index.php', 'PUT', ['equipment_id' => $equipmentId, 'category_id' => $b] + $equipment);
-    callApi($clients['staff'], 'categories/index.php?id=' . $a, 'DELETE');
+    foreach (['abc', 0, [], true, 2147483647] as $invalid) callApi($clients['admin'], 'equipment/index.php', 'PUT', ['equipment_id' => $equipmentId, 'category_id' => $invalid] + $equipment, 400);
+    callApi($clients['admin'], 'equipment/index.php', 'PUT', ['equipment_id' => $equipmentId, 'category_id' => $b] + $equipment);
+    callApi($clients['admin'], 'categories/index.php?id=' . $a, 'DELETE');
     callApi($clients['customer'], 'categories/index.php?id=' . $a, 'GET', null, 404);
     callApi($clients['admin'], 'categories/index.php?id=' . $a, 'DELETE', null, 404);
     verify((int)callApi($clients['customer'], 'equipment/index.php?id=' . $equipmentId)['data']['category_id'] === $b, 'Reassignment lost');

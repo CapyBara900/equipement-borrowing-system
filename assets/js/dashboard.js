@@ -232,7 +232,7 @@ async function renderCustomerView() {
     <div class="panel mb-3">
       <div class="panel-head">
         <h2>Due back</h2>
-        <a class="btn btn-sm btn-outline-secondary" href="equipment.html">Browse equipment</a>
+        <a class="btn btn-sm btn-outline-secondary" href="equipment.php">Browse equipment</a>
       </div>
       <div class="panel-body" id="dueBack"></div>
     </div>`;

@@ -21,7 +21,7 @@ Plain PHP (PDO) backend on **MySQL**, built for XAMPP + phpMyAdmin.
 
    Run `database/migration_borrowing_time_limit.sql` once for existing databases
    before using the updated app. Existing equipment defaults to a 7-day limit.
-   Admin and staff can set 1–3650 days when adding or editing equipment.
+   Admins can set 1–3650 days when adding or editing equipment.
    The latest return date is pickup date plus that many calendar days (inclusive);
    same-day returns are allowed. Changes apply to new requests; existing requests
    keep their agreed dates.
@@ -166,7 +166,7 @@ reloads a second time to get data.
 |---|---|---|
 | index.html | anyone | Sign in and register, with inline validation |
 | dashboard.html | all roles | Staff/admin get desk-wide reporting and a chart; customers get their own loans and due dates |
-| equipment.html | all roles | Catalog with search, category/status filters, sorting, pagination; request to borrow; admin CRUD; QR labels |
+| equipment.php | admin, customer | Catalog with search, category/status filters, sorting, pagination; request to borrow; admin CRUD; QR labels |
 | requests.html | all roles | Customer My Borrowings history with status tabs; staff/admin manage approvals, pickups, returns with condition/remarks, and returned transaction details |
 | notifications.html | all roles | Status updates, mark as read |
 | admin.html | admin | Manage accounts/roles and equipment categories |
@@ -179,7 +179,7 @@ reloads a second time to get data.
    debounced search input.
 3. **API integration** — every screen is populated from the project's own REST
    API. A third-party API (api.qrserver.com) is also consumed in
-   `fetchQrCode()` (assets/js/api.js): equipment.html fetches a QR label for
+   `fetchQrCode()` (assets/js/api.js): equipment.php fetches a QR label for
    an item's serial number as a blob and renders it.
 4. **AJAX / fetch** — `assets/js/api.js` wraps all calls; approving a request,
    checking in equipment, filtering, and paging all update in place.
@@ -187,7 +187,7 @@ reloads a second time to get data.
    required fields, email format, strong password requirements, password confirmation, and
    date logic (no past pick-up date; return on or after pick-up). Errors
    appear inline per field and also fire on blur.
-6. **Search / filter** — equipment.html (keyword + category + status + sort +
+6. **Search / filter** — equipment.php (keyword + category + status + sort +
    pagination) and requests.html (status + date range).
 
 ## Security carried into the frontend
@@ -204,7 +204,7 @@ nothing else breaks.
 
 ## Equipment category management
 
-Admins and staff can use **Add Category** and **Manage categories** on the Equipment
+Admins can use **Add Category** and **Manage categories** on the Equipment
 page. The admin People & categories tab uses the same editor. Customers can view
 and filter categories but cannot manage them. Names are trimmed, repeated
 whitespace is collapsed, and the database enforces case-insensitive uniqueness.
@@ -226,7 +226,7 @@ legacy names first. Run during a maintenance window for the schema alterations.
 It is safe to rerun. Fresh installations already include these constraints.
 
 Category GET supports all=1 for complete dropdowns (including more than 50
-categories). POST/PUT/DELETE require admin or staff; duplicate names and assigned
+categories; staff are denied category reads and event streams). POST/PUT/DELETE require admin; duplicate names and assigned
 category deletions return 409 with CATEGORY_DUPLICATE or CATEGORY_IN_USE.
 Invalid input returns 400; missing categories return 404. Equipment saves also
 validate the chosen category. Assigned categories cannot be deleted: reassign
@@ -252,3 +252,5 @@ adds complete action history, preserves checkout ownership and borrowing records
 and keeps the existing stock reservations. Use `database/migrate_borrowing_management.php`
 with `--dry-run` to inspect the plan, then run it without that flag. Existing databases
 must use the migration runners rather than rerunning `database/schema.sql`.
+
+Staff access is limited to Overview and Borrowing Management. Equipment is served by `equipment.php` after a server-side session/role check; `equipment.html` redirects old bookmarks to that protected route. Staff receive HTTP 403 from equipment APIs (including reads), category APIs/event streams, and standalone condition-report APIs. Only admins manage equipment and categories; admins and staff retain borrowing approvals, pickups, returns, and return condition recording through the borrowing APIs. No database migration is required.

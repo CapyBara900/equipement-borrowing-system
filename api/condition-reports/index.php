@@ -15,7 +15,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
 
     case 'GET':
-        requireRole(['admin', 'staff']);
+        requireRole(['admin']);
         $sql = CONDITION_SELECT;
         $params = [];
         if (!empty($_GET['equipment_id'])) {
@@ -29,9 +29,9 @@ switch ($method) {
         break;
 
     case 'POST':
-        // Staff/admin can log a condition report any time, not just at return
+        // Admins can log a condition report any time, not just at return
         // (e.g. a routine inspection, or damage noticed outside a return).
-        $user = requireRole(['admin', 'staff']);
+        $user = requireRole(['admin']);
         $body = getJsonBody();
         $equipmentId = $body['equipment_id'] ?? null;
         $condition   = $body['condition_status'] ?? null;

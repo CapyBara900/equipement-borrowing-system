@@ -3,8 +3,8 @@ require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/category_management.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
-if ($method === 'GET') requireLogin();
-elseif (in_array($method, ['POST', 'PUT', 'DELETE'], true)) requireRole(['admin', 'staff']);
+if ($method === 'GET') requireRole(['admin', 'customer']);
+elseif (in_array($method, ['POST', 'PUT', 'DELETE'], true)) requireRole(['admin']);
 else sendJson(405, ['success' => false, 'message' => 'Method not allowed.']);
 
 try {

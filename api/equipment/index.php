@@ -17,13 +17,13 @@ switch ($method) {
 
     case 'GET':
         try {
-        $user = requireLogin();
+        $user = requireRole(['admin', 'customer']);
 
         // ----------------------------------------------------------------
         // Customers see only universal catalog availability. Their personal
         // request history is provided by the requests endpoint instead.
         //
-        // Admin / staff receive:
+        // Admins receive:
         //     - e.status (raw, unmodified — must stay 'pending' so the
         //       approval workflow can check and act on it correctly)
         //     - pending_request_id, pending_user_id, pending_user_name
@@ -44,8 +44,8 @@ switch ($method) {
                 LEFT JOIN categories c ON c.category_id = e.category_id
             ";
         } else {
-            // Admin / staff: raw status + pending request info for management.
-            // We join the MOST RECENT pending request so staff can see who
+            // Admins: raw status + pending request info for management.
+            // We join the MOST RECENT pending request so admins can see who
             // submitted it without visiting the separate Requests page.
             $baseSelect = "
                 SELECT e.equipment_id, e.equipment_name, e.description,
@@ -130,7 +130,7 @@ switch ($method) {
         break;
 
     case 'POST':
-        requireRole(['admin', 'staff']);
+        requireRole(['admin']);
         $body = getJsonBody();
         $name = cleanText($body['equipment_name'] ?? '');
         $description = cleanText($body['description'] ?? '');
@@ -180,7 +180,7 @@ switch ($method) {
         break;
 
     case 'PUT':
-        requireRole(['admin', 'staff']);
+        requireRole(['admin']);
         $body = getJsonBody();
         $id = $body['equipment_id'] ?? null;
         if (!$id) {
@@ -261,7 +261,7 @@ switch ($method) {
             ]);
             if ($releaseQuantity > 0) {
                 $db->prepare("INSERT INTO equipment_condition_reports (equipment_id, reported_by_user_id, condition_status, notes) VALUES (?, ?, 'good', ?)")
-                    ->execute([$id, currentUser()['user_id'], $releaseQuantity . ' units cleared for reuse by authorized staff.']);
+                    ->execute([$id, currentUser()['user_id'], $releaseQuantity . ' units cleared for reuse by an administrator.']);
             }
             $db->commit();
             sendJson(200, ['success' => true, 'message' => 'Equipment updated.']);
