@@ -58,10 +58,12 @@ const Api = {
   login: (data) => request('auth/login.php', { method: 'POST', body: data }),
   logout: () => request('auth/logout.php', { method: 'POST' }),
   me: () => request('auth/me.php'),
+  updateProfile: (data) => request('auth/update_profile.php', { method: 'POST', body: data }),
 
   // --- catalog ---
   listEquipment: (q) => request('equipment/index.php', { query: q }),
   getEquipment: (id) => request('equipment/index.php', { query: { id } }),
+  getEquipmentHistory: (equipment_id) => request('equipment/history.php', { query: { equipment_id } }),
   createEquipment: (d) => request('equipment/index.php', { method: 'POST', body: d }),
   updateEquipment: (d) => request('equipment/index.php', { method: 'PUT', body: d }),
   deleteEquipment: (id) => request('equipment/index.php', { method: 'DELETE', query: { id } }),
@@ -100,12 +102,13 @@ const Api = {
   createUser: (d) => request('users/index.php', { method: 'POST', body: d }),
   setUserRole: (d) => request('users/index.php', { method: 'PUT', body: d }),
   unlockUser: (id) => request('users/index.php', { method: 'PUT', body: { user_id: id, action: 'unlock' } }),
+  resetUserPassword: (id, password, csrfToken) => request('users/index.php', { method: 'PUT', body: { user_id: id, action: 'reset_password', password, csrf_token: csrfToken } }),
   deleteUser: (id) => request('users/index.php', { method: 'DELETE', query: { id } }),
 
   listNotifications: (q) => request('notifications/index.php', { query: q }),
   markNotification: (d) => request('notifications/index.php', { method: 'PUT', body: d }),
 
-  dashboard: () => request('dashboard/index.php'),
+  dashboard: (query) => request('dashboard/index.php', { query }),
 };
 
 /* --------------------------------------------------------------------------

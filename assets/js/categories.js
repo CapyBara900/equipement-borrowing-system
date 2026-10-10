@@ -70,9 +70,47 @@ const CategoryManager = (() => {
     }],
     categoryDescription: [{ test: value => [...value].length <= 500, message: 'Description must be 500 characters or fewer.' }],
   };
+  function categoryIcon(name) {
+    const label = String(name || '').toLowerCase();
+    let paths;
+    if (/audio|visual|camera|projector/.test(label)) {
+      paths = '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/>';
+    } else if (/comput|laptop|desktop/.test(label)) {
+      paths = '<rect x="4" y="3" width="16" height="12" rx="2"/><path d="m2 19 2-4h16l2 4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1Z"/>';
+    } else if (/network|router|connect/.test(label)) {
+      paths = '<rect x="8" y="2" width="8" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M5 16v-4h14v4"/>';
+    } else if (/tool|repair|workshop|hardware/.test(label)) {
+      paths = '<path d="M14.7 6.3a5.5 5.5 0 0 0-7 7L3 18a2.1 2.1 0 0 0 3 3l4.7-4.7a5.5 5.5 0 0 0 7-7l-3.5 3.5-3-3Z"/>';
+    } else {
+      paths = '<path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9M7.5 5.5l9 5"/>';
+    }
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + paths + '</svg>';
+  }
   function render(rows) {
     const host = document.getElementById('categoryList');
     if (!host) return;
+    host.classList?.remove('loading', 'is-loading');
+    host.removeAttribute?.('aria-busy');
+    if (host.dataset?.layout === 'cards') {
+      host.innerHTML = rows.length ? rows.map(category => {
+        const name = category.category_name;
+        const count = category.equipment_count ?? 0;
+        return `
+      <article class="category-card">
+        <div class="category-card-header">
+          <span class="category-icon">${categoryIcon(name)}</span>
+          <h3>${esc(name)}</h3>
+        </div>
+        <p class="category-description">${esc(category.description || 'No description yet.')}</p>
+        <span class="equipment-count">${esc(count)} Assigned ${Number(count) === 1 ? 'Item' : 'Items'}</span>
+        <div class="category-card-actions">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-edit-category="${esc(category.category_id)}" aria-label="${esc('Edit details for ' + name)}">Edit Details</button>
+          <button type="button" class="btn btn-sm btn-outline-danger category-delete" data-delete-category="${esc(category.category_id)}" aria-label="${esc('Delete category ' + name)}" title="Reassign or unlink assigned equipment before deleting this category.">Delete Category</button>
+        </div>
+      </article>`;
+      }).join('') : emptyState('No categories yet', 'Add one so equipment can be grouped and filtered.');
+      return;
+    }
     host.innerHTML = rows.length ? rows.map(category => `
       <article class="item-row">
         <div class="grow">

@@ -8,7 +8,7 @@ const windowEvents = new Map(), documentEvents = new Map(), timers = new Map();
 let timerSequence = 0;
 function element(id) {
   if (!elements.has(id)) elements.set(id, {
-    id, value: '', innerHTML: '', textContent: '', hidden: false, disabled: false,
+    id, dataset: {}, value: '', innerHTML: '', textContent: '', hidden: false, disabled: false,
     attrs: {}, listeners: {}, dataset: {}, tabIndex: 0,
     classList: {toggle() {}, add() {}, remove() {}},
     setAttribute(key, value) { this.attrs[key] = value; },
@@ -28,7 +28,7 @@ const context = vm.createContext({
   setInterval(fn,ms) {const id=++timerSequence;timers.set(id,{fn,ms});return id;},
   clearInterval(id) {timers.delete(id);},
   localStorage: {getItem() {return null;}},
-  document: {getElementById: element, querySelectorAll: selector => selector === '[data-status]' ? tabs : [], title: '', hidden:false, addEventListener(name,handler){documentEvents.set(name,handler);}},
+  document: {getElementById: element, querySelector: () => null, querySelectorAll: selector => selector === '[data-status]' ? tabs : [], title: '', hidden:false, addEventListener(name,handler){documentEvents.set(name,handler);}},
   confirm: () => confirmation,
   bootstrap: {Modal: {getOrCreateInstance: () => ({show() {showCount++;}})}},
   Api: {
@@ -37,6 +37,8 @@ const context = vm.createContext({
   },
 });
 const run = code => vm.runInContext(code, context);
+const sidebarSource = fs.readFileSync(path.join(root, 'assets/js/sidebar.js'), 'utf8');
+run(sidebarSource);
 const shared = fs.readFileSync(path.join(root, 'assets/js/app.js'), 'utf8');
 run(shared + '\nCURRENT_USER={user_id:1,role:"customer"};toast=()=>{};');
 const source = fs.readFileSync(path.join(root, 'assets/js/requests.js'), 'utf8');

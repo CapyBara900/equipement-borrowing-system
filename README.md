@@ -164,12 +164,13 @@ reloads a second time to get data.
 ## Pages
 | File | Who | What it does |
 |---|---|---|
-| index.html | anyone | Sign in and register, with inline validation |
+| index.html / register.php | anyone | Sign in and create accounts, with dynamic validation, password strength/match feedback, and loading states |
 | dashboard.html | all roles | Staff/admin get desk-wide reporting and a chart; customers get their own loans and due dates |
 | equipment.php | admin, customer | Catalog with search, category/status filters, sorting, pagination; request to borrow; admin CRUD; QR labels |
 | requests.html | all roles | Customer My Borrowings history with status tabs; staff/admin manage approvals, pickups, returns with condition/remarks, and returned transaction details |
 | notifications.html | all roles | Status updates, mark as read |
 | admin.html | admin | Manage accounts/roles and equipment categories |
+| profile.php | all roles | Edit your own Full Name / Username and email, change your password, and view your role |
 
 ## Where each Phase 3 requirement is demonstrated
 1. **Responsive interface** — side rail collapses to a top bar + offcanvas menu
@@ -254,3 +255,32 @@ with `--dry-run` to inspect the plan, then run it without that flag. Existing da
 must use the migration runners rather than rerunning `database/schema.sql`.
 
 Staff access is limited to Overview and Borrowing Management. Equipment is served by `equipment.php` after a server-side session/role check; `equipment.html` redirects old bookmarks to that protected route. Staff receive HTTP 403 from equipment APIs (including reads), category APIs/event streams, and standalone condition-report APIs. Only admins manage equipment and categories; admins and staff retain borrowing approvals, pickups, returns, and return condition recording through the borrowing APIs. No database migration is required.
+
+## Account profile
+
+The account name and role in the desktop and mobile menus open `profile.php`
+for customers, admins, and staff. The page uses the existing styles and Back
+returns to the previous app page, with Overview as a fallback for direct visits.
+`api/auth/me.php` reads the current account from `users` joined to `roles`, using
+only the authenticated session user ID; URL parameters cannot select another
+account. It returns no password or account-management fields and rejects missing
+or deleted accounts. Account details and session name/email/role refresh from
+the database on each page load. Profile Information and Security Settings forms
+now submit through AJAX with CSRF protection and prepared updates. Existing
+databases need the unique-name migration; see [ACCOUNT_PROFILE.md](ACCOUNT_PROFILE.md)
+for the complete implementation, SQL, API contract, duplicate preflight, and upgrade steps.
+
+Verification: `node tests/account_profile_validation.cjs` and
+`C:/xampp/php/php.exe tests/account_profile_http.php` (with Apache/MySQL running),
+and `C:/xampp/php/php.exe tests/account_profile_updates.php` for isolated update tests.
+
+## Authentication UI
+
+The split-screen sign-in and Create Account views share `index.html`;
+`register.php` opens the registration view directly. See [AUTH_UI.md](AUTH_UI.md)
+for the HTML/CSS/vanilla JavaScript implementation, dynamic button rules,
+server feedback, visibility toggles, and validation checks.
+
+See [DASHBOARD_UI.md](DASHBOARD_UI.md) for the role-adaptive overview, status filters, due-date badges, and dashboard validation checks.
+
+See [CATALOG_UI.md](CATALOG_UI.md) for the equipment grid/list layouts, AJAX filters, stock indicators, and role-scoped quick-view history.

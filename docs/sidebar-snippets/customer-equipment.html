@@ -1,0 +1,27 @@
+<!-- customer sidebar for equipment.html. Copy into a page in the project root. -->
+<link href="assets/css/sidebar.css?v=sidebar-v3" rel="stylesheet">
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+
+<button class="sidebar-close" type="button" aria-label="Close navigation" id="menuClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
+<a class="sidebar-brand" href="dashboard.html" aria-label="Equipment Desk overview">
+  <span class="sidebar-brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/></svg></span>
+  <span class="sidebar-brand-copy"><span class="sidebar-brand-title">Equipment Desk</span><span class="sidebar-brand-subtitle">BORROWING &amp; RETURNS</span></span>
+</a>
+<p class="sidebar-section-label">WORKSPACE</p>
+<nav class="sidebar-nav" aria-label="Primary"><a class="nav-item" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="sidebar-nav-text">Overview</span></a>
+<a class="nav-item active" href="equipment.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="sidebar-nav-text">Equipment</span></a>
+<a class="nav-item" href="cart.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 3h3l3 12h10l3-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg><span class="sidebar-nav-text">Borrowing Cart</span><span class="sidebar-count" data-cart-count id="cartCount" aria-live="polite" aria-label="0 items in borrowing cart">0</span></a>
+<a class="nav-item" href="my-borrowings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg><span class="sidebar-nav-text">My Borrowings</span></a>
+<a class="nav-item" href="notifications.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="sidebar-nav-text">Notifications</span><span class="sidebar-unread-dot" data-sidebar-unread id="sidebarUnread" role="img" aria-label="1 unread notifications"></span></a></nav>
+<div class="sidebar-bottom">
+  <div class="user-profile-footer">
+    <a class="sidebar-profile-link account-link" href="profile.php" title="View your account profile" id="accountLink">
+      <span class="sidebar-avatar" id="accountAvatar" aria-hidden="true">D</span>
+      <span class="sidebar-user-details"><span class="sidebar-user-name" id="accountName">Darrelle</span><span class="sidebar-user-role" id="accountRole">Customer</span></span>
+    </a>
+    <button class="sidebar-sign-out" type="button" data-sign-out aria-label="Sign out" title="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M14 8l4 4-4 4M8 12h13"/></svg><span class="sidebar-sr-only">Sign out</span></button>
+  </div>
+</div>
+</aside>
+<script src="assets/js/sidebar.js?v=sidebar-v3"></script>
+<script>EquipmentSidebar.bindSignOut(document.getElementById('sidebar'));</script>

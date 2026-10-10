@@ -6,117 +6,115 @@
 <title>Sign in — Equipment Desk</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="assets/css/styles.css" rel="stylesheet">
+<link href="assets/css/styles.css?v=auth-ui-v3" rel="stylesheet">
 </head>
-<body>
-
+<body class="auth-page">
 <div class="auth-wrap">
-
-  <aside class="auth-aside">
-    <div class="brand-header mb-5">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white mb-3" style="color: #fff;">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-        <line x1="8" y1="21" x2="16" y2="21"></line>
-        <line x1="12" y1="17" x2="12" y2="21"></line>
-      </svg>
-      <div style="font-size: 1.75rem; font-weight: 700; color: #fff; letter-spacing: -0.02em;">Equipment Desk</div>
-      <div style="color: #94a3b8; font-size: 1rem; margin-top: 0.2rem;">Equipment Borrowing & Management System</div>
+  <aside class="auth-aside" aria-label="Equipment Desk">
+    <div class="auth-brand">
+      <span class="auth-brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+      <div><strong>Equipment Desk</strong><span>Equipment Borrowing &amp; Management System</span></div>
     </div>
-
-    <h1>Borrow campus equipment without the logbook.</h1>
-    <p>Check what's free, request it, and track it back to the shelf. Staff approve requests and log condition on return.</p>
-    <div class="legend">
-      <div><span class="swatch" style="background:var(--ok)"></span> Available to request</div>
-      <div><span class="swatch" style="background:var(--busy)"></span> Currently borrowed</div>
-      <div><span class="swatch" style="background:var(--fault)"></span> Out for repair</div>
+    <div class="auth-brand-story">
+      <p class="auth-eyebrow">For your campus. For your next project.</p>
+      <h1>Borrow campus equipment without the logbook.</h1>
+      <p>Check what's free, request it, and track it back to the shelf. Staff approve requests and log condition on return.</p>
+      <div class="legend">
+        <div><span class="swatch auth-swatch-available"></span>Available to request</div>
+        <div><span class="swatch auth-swatch-borrowed"></span>Currently borrowed</div>
+        <div><span class="swatch auth-swatch-repair"></span>Out for repair</div>
+      </div>
     </div>
+    <p class="auth-brand-foot">One place for equipment, borrowing, and returns.</p>
   </aside>
-
   <main class="auth-main">
     <div class="auth-card">
-
-      <!-- Sign in -->
-      <section id="signInPane">
-        <h2 class="mb-1" style="font-size: 1.5rem; font-weight: 700; color: var(--ink);">Sign in</h2>
-        <p class="text-muted mb-4" style="font-size: 0.95rem; color: var(--slate);">Use the account your school issued you.</p>
-
+      <section id="signInPane" aria-labelledby="signInHeading">
+        <div class="auth-form-head"><p class="auth-eyebrow">Your equipment desk</p><h2 id="signInHeading">Sign in</h2><p>Welcome back. Use your registered account to continue.</p></div>
+        <div id="signInFeedback" class="auth-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div>
         <form id="signInForm" novalidate>
-          <div class="mb-3">
-            <label class="form-label" for="loginEmail">Email address</label>
-            <input class="form-control" type="email" id="loginEmail" autocomplete="email" placeholder="name@gmail.edu" required>
-            <div class="field-error" data-error-for="loginEmail"></div>
-          </div>
-          <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-              <label class="form-label mb-0" for="loginPassword">Password</label>
+          <fieldset id="signInFields">
+            <div class="auth-field">
+              <label class="form-label" for="loginEmail">Email address</label>
+              <input class="form-control" type="email" id="loginEmail" name="email" autocomplete="email" placeholder="you@example.com" maxlength="254" aria-describedby="loginEmailError" required>
+              <div class="field-error" id="loginEmailError" data-error-for="loginEmail"></div>
             </div>
-            <div class="input-group mt-1">
-              <input class="form-control" type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" required>
-              <button class="btn btn-outline-secondary" type="button" id="toggleLoginPassword" aria-label="Show password">Show</button>
+            <div class="auth-field">
+              <label class="form-label" for="loginPassword">Password</label>
+              <div class="auth-password-field">
+              <input class="form-control" type="password" id="loginPassword" name="password" autocomplete="current-password" placeholder="Enter your password" maxlength="200" aria-describedby="loginPasswordError" required>
+              <button class="auth-password-toggle" type="button" id="toggleLoginPassword" aria-controls="loginPassword" aria-label="Show password" aria-pressed="false" title="Show password" data-auth-password-toggle>
+                <svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="password-eye-slash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" hidden><path d="m3 3 18 18M10.6 5.1 12 5c6.5 0 10 7 10 7a20 20 0 0 1-3.1 3.8M6.2 6.2A21 21 0 0 0 2 12s3.5 7 10 7a12 12 0 0 0 5.8-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+              </button>
             </div>
-            <div class="field-error" data-error-for="loginPassword"></div>
-          </div>
-          <button class="btn btn-primary w-100 mb-3" type="submit" id="signInBtn" disabled style="padding: 0.6rem; font-size: 1rem; font-weight: 600;">Sign in</button>
+              <div class="field-error" id="loginPasswordError" data-error-for="loginPassword"></div>
+            </div>
+            <button class="btn btn-primary auth-submit" type="submit" id="btn-sign-in" aria-busy="false" disabled><span class="auth-spinner" id="signInSpinner" aria-hidden="true" hidden></span><span id="signInLabel">Sign in</span></button>
+          </fieldset>
         </form>
-
-        <div class="text-center mt-4">
-          <p class="mb-0" style="font-size: 0.9rem; color: var(--slate);">
-            Don't have an account? <a href="#" id="toRegister" style="font-weight: 600;">Create one</a>
-          </p>
-        </div>
+        <p class="auth-switch">Don't have an account? <a href="#register" id="toRegister">Create one</a></p>
       </section>
-
-      <!-- Register -->
-      <section id="registerPane" hidden>
-        <h2 class="mb-1" style="font-size: 1.5rem; font-weight: 700; color: var(--ink);">Create an account</h2>
-        <p class="text-muted mb-4" style="font-size: 0.95rem; color: var(--slate);">New accounts can browse equipment and submit requests.</p>
-
+      <section id="registerPane" aria-labelledby="registerHeading" hidden>
+        <div class="auth-form-head"><p class="auth-eyebrow">Get started</p><h2 id="registerHeading">Create an account</h2><p>Browse campus equipment and submit borrowing requests.</p></div>
+        <div id="registerFeedback" class="auth-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div>
         <form id="registerForm" novalidate>
-          <div class="mb-3">
-            <label class="form-label" for="regName">Full name</label>
-            <input class="form-control" type="text" id="regName" autocomplete="name" placeholder="John Doe" required>
-            <div class="field-error" data-error-for="regName"></div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="regEmail">Email address</label>
-            <input class="form-control" type="email" id="regEmail" autocomplete="email" placeholder="name@gmail.edu" required>
-            <div class="field-error" data-error-for="regEmail"></div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="regPassword">Password</label>
-            <div class="input-group">
-              <input class="form-control" type="password" id="regPassword" autocomplete="new-password" placeholder="••••••••" required>
-              <button class="btn btn-outline-secondary pw-toggle" type="button" id="toggleRegPassword" aria-label="Show password" aria-pressed="false" title="Show password"><svg class="pw-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+          <fieldset id="registerFields">
+            <div class="auth-field">
+              <label class="form-label" for="regName">Full name</label>
+              <input class="form-control" type="text" id="regName" name="name" autocomplete="name" placeholder="e.g. Dana Santos" minlength="5" maxlength="100" aria-describedby="regNameHint regNameError" required>
+              <p class="form-text" id="regNameHint">Use your full name, with 5–100 characters.</p>
+              <div class="field-error" id="regNameError" data-error-for="regName"></div>
             </div>
-            <div class="field-error" data-error-for="regPassword"></div>
-            <div class="form-text mt-1" style="font-size: 0.8rem; color: var(--slate);">At least 12 characters, with uppercase, lowercase, number, and special character (!@#$%^&amp;*). No spaces or personal information.</div>
-          </div>
-          <div class="mb-4">
-            <label class="form-label" for="regConfirm">Confirm password</label>
-            <div class="input-group">
-              <input class="form-control" type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
-              <button class="btn btn-outline-secondary pw-toggle" type="button" id="toggleRegConfirm" aria-label="Show password" aria-pressed="false" title="Show password"><svg class="pw-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            <div class="auth-field">
+              <label class="form-label" for="regEmail">Email address</label>
+              <input class="form-control" type="email" id="regEmail" name="email" autocomplete="email" placeholder="you@example.com" maxlength="254" aria-describedby="regEmailHint regEmailError" required>
+              <p class="form-text" id="regEmailHint">You'll use this address to sign in.</p>
+              <div class="field-error" id="regEmailError" data-error-for="regEmail"></div>
             </div>
-            <div class="field-error" data-error-for="regConfirm"></div>
-          </div>
-          <button class="btn btn-primary w-100 mb-3" type="submit" id="registerBtn" disabled style="padding: 0.6rem; font-size: 1rem; font-weight: 600;">Create account</button>
+            <div class="auth-field">
+              <label class="form-label" for="regPassword">Password</label>
+              <div class="auth-password-field">
+              <input class="form-control" type="password" id="regPassword" name="password" autocomplete="new-password" placeholder="Create a password" maxlength="72" aria-describedby="regPasswordHint regStrengthText regPasswordError" required>
+              <button class="auth-password-toggle" type="button" id="toggleRegPassword" aria-controls="regPassword" aria-label="Show password" aria-pressed="false" title="Show password" data-auth-password-toggle>
+                <svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="password-eye-slash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" hidden><path d="m3 3 18 18M10.6 5.1 12 5c6.5 0 10 7 10 7a20 20 0 0 1-3.1 3.8M6.2 6.2A21 21 0 0 0 2 12s3.5 7 10 7a12 12 0 0 0 5.8-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+              </button>
+            </div>
+              <div class="auth-strength is-empty" id="regStrength">
+                <div class="auth-strength-heading"><span id="regStrengthLabel">Password strength</span><span id="regStrengthText" role="status" aria-live="polite">Not entered</span></div>
+                <div class="auth-strength-track" id="regStrengthMeter" role="meter" aria-labelledby="regStrengthLabel" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" aria-valuetext="No password entered"><span class="auth-strength-fill" aria-hidden="true"></span></div>
+              </div>
+              <ul class="auth-password-checklist" aria-label="Password requirements">
+                <li id="regRuleLength">12+ characters</li><li id="regRuleCase">Upper &amp; lowercase</li><li id="regRuleNumber">A number</li><li id="regRuleSymbol">A symbol (! @ # $ % ^ &amp; *)</li>
+              </ul>
+              <p class="form-text" id="regPasswordHint">Up to 72 bytes. No spaces or parts of your name or email.</p>
+              <div class="field-error" id="regPasswordError" data-error-for="regPassword"></div>
+            </div>
+            <div class="auth-field">
+              <label class="form-label" for="regConfirm">Confirm password</label>
+              <div class="auth-password-field">
+              <input class="form-control" type="password" id="regConfirm" name="confirm_password" autocomplete="new-password" placeholder="Re-enter your password" maxlength="72" aria-describedby="regConfirmStatus regConfirmError" required>
+              <button class="auth-password-toggle" type="button" id="toggleRegConfirm" aria-controls="regConfirm" aria-label="Show password confirmation" aria-pressed="false" title="Show password confirmation" data-auth-password-toggle>
+                <svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="password-eye-slash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" hidden><path d="m3 3 18 18M10.6 5.1 12 5c6.5 0 10 7 10 7a20 20 0 0 1-3.1 3.8M6.2 6.2A21 21 0 0 0 2 12s3.5 7 10 7a12 12 0 0 0 5.8-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+              </button>
+            </div>
+              <p id="regConfirmStatus" class="auth-match" role="status" aria-live="polite" hidden></p>
+              <div class="field-error" id="regConfirmError" data-error-for="regConfirm"></div>
+            </div>
+            <button class="btn btn-primary auth-submit" type="submit" id="registerBtn" aria-busy="false" disabled><span class="auth-spinner" id="registerSpinner" aria-hidden="true" hidden></span><span id="registerLabel">Create account</span></button>
+          </fieldset>
         </form>
-
-        <div class="text-center mt-4">
-          <p class="mb-0" style="font-size: 0.9rem; color: var(--slate);">
-            Already registered? <a href="#" id="toSignIn" style="font-weight: 600;">Sign in</a>
-          </p>
-        </div>
+        <p class="auth-switch"><a href="#signin" id="toSignIn" class="auth-back-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 5-7 7 7 7M5 12h14"/></svg><span>Back to Login</span></a></p>
       </section>
-
+      <noscript><p class="auth-feedback">Please enable JavaScript to sign in or create an account.</p></noscript>
     </div>
   </main>
 </div>
-
 <div id="toastZone"></div>
-
-<script src="assets/js/api.js"></script>
-<script src="assets/js/app.js?v=staff-navigation-v3"></script>
-<script src="assets/js/login.js"></script>
+<script src="assets/js/api.js?v=auth-ui-v1"></script>
+<script src="assets/js/app.js?v=account-profile-v1"></script>
+<script src="assets/js/login.js?v=auth-ui-v3"></script>
 </body>
 </html>

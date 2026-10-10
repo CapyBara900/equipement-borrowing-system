@@ -37,37 +37,14 @@ function toast(message, kind = 'ok') {
 
 /* ---------- Navigation ---------------------------------------------------- */
 
-const NAV_LINKS = [
-  { href: 'dashboard.html', label: 'Overview', roles: ['admin', 'staff', 'customer'] },
-  { href: 'equipment.php', label: 'Equipment', roles: ['admin', 'customer'] },
-  { href: 'cart.html', label: 'Borrowing Cart', roles: ['customer'], cart: true },
-  { href: 'requests.html', label: 'Borrowing Management', roles: ['admin', 'staff'] },
-  { href: 'requests.html', label: 'My Borrowings', roles: ['customer'] },
-  { href: 'notifications.html', label: 'Notifications', roles: ['customer'], badge: true },
-  { href: 'admin.html', label: 'People & categories', roles: ['admin'] },
-];
+// Authentication forms also load app.js; signed-in pages load sidebar.js first.
+const NAV_LINKS = globalThis.EquipmentSidebar?.links || [];
 
 function navMarkup(user, unreadCount) {
-  const here = location.pathname.split('/').pop() || 'dashboard.html';
-  const links = NAV_LINKS
-    .filter(l => l.roles.includes(user.role))
-    .map(l => {
-      const active = l.href === here ? ' active' : '';
-      const badge = l.cart ? ` <span class="badge-count" data-cart-count aria-live="polite" aria-label="equipment items in cart">${BorrowingCart.read().length}</span>` : (l.badge && unreadCount > 0)
-        ? ` <span class="badge-count">${unreadCount}</span>` : '';
-      return `<a class="nav-item${active}" href="${l.href}">
-                <span>${esc(l.label)}</span>${badge}
-              </a>`;
-    }).join('');
-
-  return `
-    <div class="rail-brand">Equipment Desk<span>Borrowing &amp; returns</span></div>
-    <nav>${links}</nav>
-    <div class="rail-foot">
-      <span class="who">${esc(user.name)}</span>
-      <span>${esc(user.role)}</span>
-      <button class="btn btn-sm btn-outline-light w-100 mt-2" id="signOutBtn">Sign out</button>
-    </div>`;
+  return EquipmentSidebar.markup(user, {
+    cartCount: user.role === 'customer' ? BorrowingCart.read().length : 0,
+    unreadCount,
+  });
 }
 
 async function renderShell(user) {
@@ -80,17 +57,12 @@ async function renderShell(user) {
   }
 
   const markup = navMarkup(user, unread);
-  const rail = document.querySelector('.rail');
-  if (rail) rail.innerHTML = markup;
-  const canvas = document.querySelector('.rail-canvas .offcanvas-body');
-  if (canvas) canvas.innerHTML = markup;
-
-  document.querySelectorAll('#signOutBtn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      try { await Api.logout(); } catch (e) { /* sign out locally regardless */ }
-      location.href = 'index.html';
-    });
-  });
+  for (const container of [document.querySelector('.rail'), document.querySelector('.rail-canvas .offcanvas-body')]) {
+    if (!container) continue;
+    container.classList.add('sidebar');
+    container.innerHTML = markup;
+    EquipmentSidebar.bindSignOut(container, () => Api.logout());
+  }
 }
 
 /* ---------- Auth guard ----------------------------------------------------
@@ -98,16 +70,16 @@ async function renderShell(user) {
    browser goes back to the sign-in screen. The backend enforces this too —
    this is just so people don't stare at an empty page.
    -------------------------------------------------------------------------- */
-async function requireSession(allowedRoles = null) {
+async function requireSession(allowedRoles = null, { redirectOnError = true } = {}) {
   try {
     const res = await Api.me();
     CURRENT_USER = res.data;
   } catch (err) {
-    location.href = 'index.html';
+    if (redirectOnError || err.status === 401) location.href = 'index.html';
     throw err;
   }
   const staffPageAllowed = CURRENT_USER.role !== 'staff'
-    || ['dashboard.html', 'requests.html'].includes(location.pathname.split('/').pop());
+    || ['dashboard.html', 'requests.html', 'profile.php'].includes(location.pathname.split('/').pop());
   if (!staffPageAllowed || (allowedRoles && !allowedRoles.includes(CURRENT_USER.role))) {
     document.querySelector('.main').innerHTML =
       `<div class="empty"><strong>This page isn't available for your account</strong>
@@ -412,7 +384,7 @@ const BorrowingCart = (() => {
     } catch (_) { return fallback.get(key())||[]; }
   }
   function read(){return serverRows===null?previous():serverRows.map(row=>({...row}));}
-  function updateBadges(){document.querySelectorAll('[data-cart-count]').forEach(el=>{el.textContent=read().length;});}
+  function updateBadges(){document.querySelectorAll('[data-cart-count]').forEach(el=>{el.textContent=read().length;el.setAttribute('aria-label',read().length+' items in borrowing cart');});}
   function write(rows){if(serverRows!==null)serverRows=rows;else{fallback.set(key(),rows);try{localStorage.setItem(key(),JSON.stringify(rows));}catch(_){memoryOnly.add(key());toast('Browser storage is unavailable. Your cart lasts on this page.','bad');}}updateBadges();}
   async function initialize(){if(!initialization)initialization=(async()=>{const {data}=await Api.cartCapabilities();if(data.cart_available){const result=await Api.getCart();serverRows=result.data;updateBadges();}return data;})().catch(error=>{initialization=null;throw error;});return initialization;}
   async function reload(){if(serverRows!==null){const {data}=await Api.getCart();write(data);}return read();}

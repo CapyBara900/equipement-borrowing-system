@@ -1,131 +1,705 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>My Borrowings — Equipment Desk</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="assets/css/styles.css?v=borrowing-management-v1" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manage customer requests, equipment pickups, and returns.">
+  <title>Borrowing Management — Equipment Desk</title>
+  <style>
+
+/* Embedded design system: no framework or font downloads required. */
+:root{color-scheme:light;--bg:#f8fafc;--surface:#fff;--border:#e2e8f0;--ink:#0f172a;--muted:#64748b;--primary:#2563eb;--primary-hover:#1d4ed8;--sidebar:248px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5}button,input,select,textarea{font:inherit}button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}button{cursor:pointer}a{color:inherit;text-decoration:none}button:disabled{cursor:wait;opacity:.6}svg{width:20px;height:20px;flex-shrink:0;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}h1,h2,h3,p{margin:0}h1{font-size:30px;line-height:1.25;letter-spacing:-.8px;font-weight:750}h2{font-size:16px;line-height:1.4}h3{font-size:15px}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid #2563eb;outline-offset:4px}.sidebar :focus-visible{outline-color:#93c5fd}[hidden]{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.skip-link{position:fixed;top:12px;left:12px;z-index:20;padding:12px 18px;border-radius:8px;background:#fff;transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}
+.avatar{width:34px;height:34px;display:grid;place-items:center;flex-shrink:0;border-radius:50%;background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700}
+.shell{margin-left:var(--sidebar);min-width:0}.topbar{height:76px;border-bottom:1px solid var(--border);background:#fff;padding:0 36px;display:flex;align-items:center;justify-content:space-between;gap:16px}.breadcrumbs{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px}.breadcrumbs svg{width:14px;height:14px;color:#94a3b8}.breadcrumbs strong{font-weight:550;color:#475569}.topbar-right{display:flex;align-items:center;gap:19px}.workspace-label{color:var(--muted);font-size:12px}.topbar-divider{width:1px;height:24px;background:var(--border)}.icon-button{border:1px solid var(--border);background:white;border-radius:8px;width:38px;height:38px;display:grid;place-items:center;color:#475569}.icon-button:hover{background:#f1f5f9}.mobile-menu{display:none}.main{max-width:1200px;margin:0 auto;padding:34px 36px 40px}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:25px}.eyebrow{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-weight:650;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:9px}.eyebrow-dot{width:6px;height:6px;background:#2563eb;border-radius:50%}.subtitle{margin-top:9px;font-size:13px;color:var(--muted)}.button{min-height:40px;display:inline-flex;justify-content:center;align-items:center;gap:8px;padding:9px 15px;border:1px solid var(--border);border-radius:7px;background:white;color:#334155;font-size:12px;font-weight:650;white-space:nowrap;transition:background .15s,border-color .15s}.button:hover{background:#f8fafc;border-color:#cbd5e1}.button svg{width:16px;height:16px}.button-primary{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 2px 3px #2563eb15}.button-primary:hover{background:#1d4ed8;border-color:#1d4ed8}.button-danger{color:#991b1b;border-color:#fecaca}.button-danger:hover{background:#fef2f2;border-color:#fca5a5}.button-small{min-height:32px;padding:6px 10px;font-size:11px}.text-button{border:0;background:transparent;color:#64748b;padding:10px 4px;font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}.text-button:hover{color:#1d4ed8}
+
+.toolbar{background:white;border:1px solid var(--border);border-radius:10px;margin-bottom:23px;overflow:hidden}.tabs{display:flex;overflow-x:auto;scrollbar-width:thin;padding:0 16px;border-bottom:1px solid var(--border);gap:5px}.tab{position:relative;flex-shrink:0;display:flex;align-items:center;gap:7px;padding:16px 11px;background:none;border:0;border-bottom:2px solid transparent;min-height:50px;font-size:12px;font-weight:600;color:#64748b}.tab:hover{color:#1d4ed8;background:#f8fafc}.tab[aria-selected="true"]{color:#2563eb;border-bottom-color:#2563eb}.tab-count{border-radius:5px;background:#f1f5f9;color:#475569;font-size:10px;line-height:18px;min-width:19px;padding:0 5px}.tab[aria-selected="true"] .tab-count{background:#eff6ff;color:#1d4ed8}.filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;padding:17px 20px 18px}.field{display:grid;gap:6px;min-width:0}.field label{font-size:11px;font-weight:650;color:#475569}.field input,.field select,.field textarea{width:100%;min-height:39px;padding:9px 11px;border:1px solid var(--border);border-radius:6px;color:#334155;background:#fff;outline-offset:2px;font-size:12px}.field input::placeholder{color:#64748b}.date-field{width:185px}.search-field{flex:1;min-width:220px;max-width:400px}.search-wrap{position:relative}.search-wrap input{padding-left:36px}.search-wrap svg{position:absolute;left:12px;top:11px;width:16px;height:16px;color:#64748b}.filters .text-button{margin-bottom:1px}.filter-error{padding:0 20px 16px;color:#991b1b;font-size:12px}.list-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px}.list-heading h2{font-size:13px;font-weight:650}.list-heading p{color:#64748b;font-size:11px}.sort-label{display:flex;align-items:center;gap:5px;color:#64748b;font-size:11px}.sort-label svg{width:14px;height:14px}.sample-note{color:#64748b;font-size:11px;margin-bottom:16px}.request-list{display:grid;gap:20px}
+.request-card{min-width:0;background:#fff;border:1px solid var(--border);border-radius:11px;box-shadow:0 2px 5px #0f172a03;overflow:hidden}.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 23px 18px}.card-reference{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.card-reference h2{font-size:14px;font-weight:750;letter-spacing:-.1px}.checkout-reference{font-size:10px;font-weight:500;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:5px;padding:3px 7px}.card-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:11px;color:#64748b}.card-meta svg{width:13px;height:13px}.card-user{color:#475569;font-weight:550;display:inline-flex;align-items:center;gap:5px}.meta-dot{color:#cbd5e1}.status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;font-size:9px;font-weight:750;letter-spacing:.55px;text-transform:uppercase;white-space:nowrap;line-height:1.5}.status::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}.status-pending{background:#fef3c7;color:#92400e}.status-approved{background:#dcfce7;color:#166534}.status-borrowed{background:#e0f2fe;color:#075985}.status-rejected{background:#fee2e2;color:#991b1b}.status-returned{background:#f1f5f9;color:#475569}.status-cancelled{background:#f3f4f6;color:#6b7280}.status-stack{display:grid;justify-items:end;gap:6px}.partial-label{font-size:10px;color:#64748b}
+.table-scroll{position:relative;overflow-x:auto;scrollbar-width:thin}.items-table{border-collapse:collapse;width:100%;text-align:left;table-layout:auto}.items-table th{padding:11px 12px;background:#f8fafc;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:10px;font-weight:650;color:#64748b;white-space:nowrap}.items-table td{padding:17px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;font-size:11px;color:#475569}.items-table th:first-child,.items-table td:first-child{padding-left:23px}.items-table th:last-child,.items-table td:last-child{padding-right:23px;text-align:right}.items-table tbody tr:last-child td{border-bottom:0}.items-table th:nth-child(2),.items-table td:nth-child(2){text-align:center}.equipment-cell{display:flex;align-items:center;gap:11px;min-width:170px}.equipment-icon{width:36px;height:36px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;display:grid;place-items:center;color:#64748b;flex-shrink:0}.equipment-icon svg{width:19px;height:19px}.equipment-name{font-size:12px;color:#0f172a;font-weight:650;display:block}.equipment-section{font-size:10px;color:#64748b;display:block;margin-top:3px}.quantity{display:inline-block;font-size:12px;color:#334155;font-weight:600}.item-date{white-space:nowrap;display:block;font-variant-numeric:tabular-nums}.no-action{color:#64748b;font-size:11px}.row-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}.card-footer{padding:14px 23px;border-top:1px solid var(--border);background:#fdfefe;display:flex;justify-content:space-between;align-items:center;gap:12px}.item-summary{display:flex;align-items:center;gap:7px;color:#64748b;font-size:11px}.item-summary svg{width:14px;height:14px;color:#94a3b8}.item-summary strong{font-weight:550;color:#475569}.footer-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.card-note{padding:11px 23px;background:#fffbfb;border-top:1px solid #fee2e2;color:#991b1b;font-size:11px;display:flex;align-items:flex-start;gap:7px}.card-note svg{width:14px;height:14px;margin-top:1px}.empty-state{border:1px dashed #cbd5e1;border-radius:11px;padding:48px 24px;text-align:center;background:#fff}.empty-state svg{width:30px;height:30px;color:#94a3b8;margin-bottom:12px}.empty-state p{margin:7px 0 18px;color:#64748b;font-size:12px}.page-footer{display:flex;justify-content:space-between;gap:12px;color:#64748b;font-size:10px;margin-top:25px;padding-top:16px;border-top:1px solid var(--border)}.page-footer span{display:flex;align-items:center;gap:5px}.page-footer svg{width:12px;height:12px}
+.notice{padding:13px 16px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;border-radius:8px;font-size:12px;margin-bottom:18px}.notice.error{background:#fef2f2;border-color:#fecaca;color:#991b1b}.dialog{border:1px solid var(--border);border-radius:14px;padding:0;max-width:min(640px,calc(100% - 32px));width:640px;color:#0f172a;box-shadow:0 24px 80px #0f172a33;max-height:calc(100dvh - 40px);overflow:auto}.dialog::backdrop{background:#0f172a80;backdrop-filter:blur(3px)}.dialog-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;border-bottom:1px solid var(--border)}.dialog-header h2{font-size:18px}.dialog-body{padding:22px 24px}.dialog-body>p{color:#475569;font-size:13px;line-height:1.7}.dialog-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}.details-meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 0 22px}.details-meta dt{font-size:11px;color:#64748b}.details-meta dd{margin:4px 0 0;font-size:13px;font-weight:600}.detail-item{padding:15px 0;border-top:1px solid var(--border)}.detail-item-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.detail-item p{font-size:12px;color:#64748b;margin-top:6px}.history{padding-left:18px;margin:10px 0 0;font-size:11px;color:#64748b}.return-fields{display:grid;gap:15px;margin-top:20px}.return-fields textarea{resize:vertical}.return-fields p{font-size:11px;color:#64748b}.menu-backdrop{display:none}
+@media(min-width:1450px){.main{padding-top:42px}.page-heading{margin-bottom:30px}.request-list{gap:22px}}
+@media(max-width:1150px){.main{padding:28px 24px}.topbar{padding:0 24px}.items-table th,.items-table td{padding-left:9px;padding-right:9px}.items-table th:first-child,.items-table td:first-child{padding-left:18px}.items-table th:last-child,.items-table td:last-child{padding-right:18px}.card-header{padding-left:18px;padding-right:18px}.card-footer{padding-left:18px;padding-right:18px}.tab{padding-left:9px;padding-right:9px}.tabs{gap:1px;padding:0 10px}}
+@media(max-width:991.98px){.sidebar{display:none}.shell{margin-left:0}.topbar{height:66px}.mobile-menu{display:grid}.breadcrumbs{margin-right:auto}.sidebar.menu-open{display:flex;width:260px;box-shadow:8px 0 32px #0f172a33}.menu-backdrop.menu-open{display:block;position:fixed;inset:0;background:#0f172a66;border:0;z-index:7}.workspace-label{display:none}.items-table{min-width:730px}.main{padding:28px 24px}.toolbar{margin-bottom:22px}}
+@media(max-width:620px){h1{font-size:25px}.main{padding:25px 16px 30px}.topbar{padding:0 16px;gap:10px}.breadcrumbs>a,.breadcrumbs>svg{display:none}.topbar-right{gap:10px}.topbar-divider{display:none}.page-heading{align-items:flex-start;flex-direction:column;gap:15px;margin-bottom:22px}.page-heading>.button{align-self:flex-start}.subtitle{font-size:12px;max-width:320px}.filters{gap:12px;padding:15px}.date-field{width:auto;flex:1 1 calc(50% - 6px)}.search-field{flex-basis:100%;max-width:none;min-width:0}.filters .text-button{margin-left:auto}.tabs{padding:0 8px}.tab{padding:14px 10px}.list-heading{align-items:flex-start}.list-heading p{margin-top:4px}.card-header{padding:17px 16px;gap:10px}.card-reference{gap:7px}.card-reference h2{font-size:13px}.checkout-reference{font-size:9px}.card-meta{font-size:10px;gap:5px;max-width:200px}.card-footer{padding:13px 16px;align-items:flex-start;flex-direction:column}.footer-actions{width:100%;justify-content:flex-end}.card-note{padding:11px 16px}.status{font-size:8px;padding:4px 8px}.page-footer{flex-direction:column;gap:6px}.table-scroll{margin:0}.scroll-hint{display:flex;align-items:center;gap:5px;font-size:10px;color:#64748b;padding:0 16px 10px}.scroll-hint svg{width:12px;height:12px}.dialog-header,.dialog-body{padding:18px}.dialog-footer{padding:14px 18px}.details-meta{gap:12px}.detail-item-heading{align-items:flex-start}.partial-label{font-size:9px}.sort-label{white-space:nowrap}}
+@media(min-width:621px){.scroll-hint{display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+@media print{.sidebar,.topbar,.toolbar,.page-heading>.button,.footer-actions,.row-actions,.page-footer,.sample-note,.scroll-hint,.notice{display:none!important}.shell{margin:0}.main{max-width:none;padding:0}.request-card{break-inside:avoid;box-shadow:none;margin-bottom:16px}.request-list{display:block}.items-table{min-width:0}.card-header,.card-footer{padding:12px}.items-table th,.items-table td{padding:8px;font-size:10px}.equipment-icon{display:none}body{background:white}}
+
+.sidebar-close{display:none;position:absolute;top:10px;right:10px;background:#1e293b;border-color:#334155;color:#cbd5e1;width:30px;height:30px}@media(max-width:991.98px){.sidebar-close{display:grid}}
+
+  </style>
+  <link rel="stylesheet" href="assets/css/sidebar.css?v=sidebar-v3">
 </head>
-<body>
-
-<header class="topbar">
-  <span class="brand">Equipment Desk</span>
-  <button class="btn btn-sm btn-outline-light" type="button"
-          data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Open menu">Menu</button>
-</header>
-
-<div class="offcanvas offcanvas-start rail-canvas" tabindex="-1" id="mobileNav">
-  <div class="offcanvas-body p-0"></div>
-</div>
-
-<div class="app-shell">
-  <aside class="rail"></aside>
-
-  <main class="main">
-    <div class="page-head">
-      <div>
-        <h1 id="pageTitle">My Borrowings</h1>
-        <p id="pageSub">Loading…</p>
-      </div>
-    </div>
-
-    <div id="borrowingTabs" class="borrowing-tabs panel mb-3" role="tablist" aria-label="Borrowing status" hidden>
-      <button type="button" class="borrowing-tab active" id="tab-all" role="tab" aria-selected="true" aria-controls="requestList" data-status="" tabindex="0">All</button>
-      <button type="button" class="borrowing-tab" id="tab-pending" role="tab" aria-selected="false" aria-controls="requestList" data-status="pending" tabindex="-1">Pending</button>
-      <button type="button" class="borrowing-tab" id="tab-approved" role="tab" aria-selected="false" aria-controls="requestList" data-status="approved" tabindex="-1">Approved</button>
-      <button type="button" class="borrowing-tab" id="tab-borrowed" role="tab" aria-selected="false" aria-controls="requestList" data-status="borrowed" tabindex="-1">Borrowed</button>
-      <button type="button" class="borrowing-tab" id="tab-returned" role="tab" aria-selected="false" aria-controls="requestList" data-status="returned" tabindex="-1">Returned</button>
-      <button type="button" class="borrowing-tab" id="tab-rejected" role="tab" aria-selected="false" aria-controls="requestList" data-status="rejected" tabindex="-1">Rejected</button>
-      <button type="button" class="borrowing-tab" id="tab-cancelled" role="tab" aria-selected="false" aria-controls="requestList" data-status="cancelled" tabindex="-1">Cancelled</button>
-    </div>
-
-    <div class="panel mb-3">
-      <div class="panel-body">
-        <div class="row g-2">
-          <div class="col-6 col-lg-4">
-            <label class="form-label" for="dateFrom" id="dateFromLabel">Created from</label>
-            <input class="form-control" type="date" id="dateFrom">
-          </div>
-          <div class="col-6 col-lg-4">
-            <label class="form-label" for="dateTo" id="dateToLabel">Created to</label>
-            <input class="form-control" type="date" id="dateTo">
-          </div>
-          <div class="col-12 col-lg-4 d-flex align-items-end">
-            <button class="btn btn-outline-secondary w-100" id="clearFilters">Clear filters</button>
-          </div>
+<body data-view="staff">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation"></aside>
+  <button type="button" class="menu-backdrop" id="menuBackdrop" aria-label="Close navigation" tabindex="-1"></button>
+  <div class="shell" id="appShell">
+    <header class="topbar">
+      <button class="icon-button mobile-menu" id="menuToggle" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="dashboard.html">Equipment Desk</a><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg><strong aria-current="page">Borrowing Management</strong></nav>
+      <div class="topbar-right"><span class="workspace-label" id="workspaceLabel">Sample workspace</span><span class="topbar-divider" aria-hidden="true"></span><span class="avatar" id="topAvatar" aria-hidden="true">AM</span></div>
+    </header>
+    <main class="main" id="main" tabindex="-1">
+      <div class="page-heading"><div><p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Equipment administration</p><h1>Borrowing Management</h1><p class="subtitle">Manage customer requests, equipment pickups, and returns.</p></div><button type="button" class="button" id="refresh"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 6a8 8 0 0 1 13.1 2.8M17.9 18A8 8 0 0 1 4.8 15.2"/></svg>Refresh</button></div>
+      <section class="toolbar" aria-label="Filter borrowing requests">
+        <div class="tabs" id="statusTabs" role="tablist" aria-label="Request status">
+          <button type="button" class="tab" id="tab-all" role="tab" aria-selected="true" aria-controls="requestList" tabindex="0" data-status="all">All Requests<span class="tab-count" id="count-all">6</span></button>
+          <button type="button" class="tab" id="tab-pending" role="tab" aria-selected="false" aria-controls="requestList" tabindex="-1" data-status="pending">Pending<span class="tab-count" id="count-pending">1</span></button>
+          <button type="button" class="tab" id="tab-approved" role="tab" aria-selected="false" aria-controls="requestList" tabindex="-1" data-status="approved">Approved<span class="tab-count" id="count-approved">1</span></button>
+          <button type="button" class="tab" id="tab-borrowed" role="tab" aria-selected="false" aria-controls="requestList" tabindex="-1" data-status="borrowed">Borrowed<span class="tab-count" id="count-borrowed">1</span></button>
+          <button type="button" class="tab" id="tab-returned" role="tab" aria-selected="false" aria-controls="requestList" tabindex="-1" data-status="returned">Returned<span class="tab-count" id="count-returned">1</span></button>
+          <button type="button" class="tab" id="tab-rejected" role="tab" aria-selected="false" aria-controls="requestList" tabindex="-1" data-status="rejected">Rejected<span class="tab-count" id="count-rejected">1</span></button>
+          <button type="button" class="tab" id="tab-cancelled" role="tab" aria-selected="false" aria-controls="requestList" tabindex="-1" data-status="cancelled">Cancelled<span class="tab-count" id="count-cancelled">1</span></button>
         </div>
+        <form class="filters" id="filterForm">
+          <div class="field search-field"><label for="requestSearch">Search requests</label><div class="search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input type="search" id="requestSearch" name="search" placeholder="Search user name or request ID" autocomplete="off"></div></div>
+          <div class="field date-field"><label for="dateFrom">Created From</label><input type="date" id="dateFrom" name="created_from" aria-describedby="dateError"></div>
+          <div class="field date-field"><label for="dateTo">Created To</label><input type="date" id="dateTo" name="created_to" aria-describedby="dateError"></div>
+          <button class="text-button" type="button" id="clearFilters">Clear Filters</button>
+        </form>
+        <p class="filter-error" id="dateError" role="alert" hidden>Created From must be on or before Created To.</p>
+      </section>
+      <div class="notice" id="feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+      <p class="sample-note" id="previewNote">Sample workspace · Changes reset on reload. <a href="index.html" style="color:#1d4ed8;text-decoration:underline;text-underline-offset:2px">Sign in</a> to see your saved transactions.</p>
+      <div class="list-heading"><div><h2 id="resultCount" role="status" aria-live="polite" aria-atomic="true">6 requests</h2><p id="resultDescription">Showing 6 of 6 requests</p></div><span class="sort-label"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 4v16m-3-3 3 3 3-3M15 4h6M15 9h4M15 14h2"/></svg>Newest first</span></div>
+      <div class="request-list" id="requestList" role="tabpanel" aria-labelledby="tab-all" tabindex="0" aria-busy="false">
+<article class="request-card" data-group="checkout:101:125" data-request-id="358" data-status="borrowed" data-total-items="2" data-visible-items="2" aria-labelledby="request-358"><header class="card-header"><div><div class="card-reference"><h2 id="request-358">Request #358</h2><span class="checkout-reference">Checkout #125</span></div><p class="card-meta"><span class="card-user"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Maya Santos</span><span class="meta-dot" aria-hidden="true">·</span><span>Created <time datetime="2026-10-10">Oct 10, 2026</time></span></p></div><div class="status-stack"><span class="status status-borrowed">borrowed</span></div></header><p class="scroll-hint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18m-4-4 4 4-4 4M7 8l-4 4 4 4"/></svg>Swipe to see all item details</p><div class="table-scroll" tabindex="0" role="region" aria-label="Items in request #358"><table class="items-table"><caption class="sr-only">Equipment and individual statuses for request #358</caption><thead><tr><th scope="col">Equipment / Section</th><th scope="col">Qty</th><th scope="col">Pick Up Date</th><th scope="col">Return By</th><th scope="col">Item Status</th><th scope="col">Action</th></tr></thead><tbody><tr data-status="borrowed" data-request-id="358" data-equipment-id="21" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 6h3l2-3h4l2 3h3a2 2 0 0 1 2 2v11H3V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></svg></span><div><span class="equipment-name">Canon EOS 80D</span><span class="equipment-section">Photography · Media Lab</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-10">Oct 10, 2026</time></td><td><time class="item-date" datetime="2026-10-14">Oct 14, 2026</time></td><td><span class="status status-borrowed">borrowed</span></td><td><div class="row-actions"><button type="button" class="button button-small " data-action="return" data-group="checkout:101:125" data-item="358" aria-label="Return Item for Canon EOS 80D, request #358">Return Item</button></div></td></tr><tr data-status="borrowed" data-request-id="359" data-equipment-id="22" data-quantity="2"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 4h10v5H7zM12 9v12M12 12 5 21M12 12l7 9"/></svg></span><div><span class="equipment-name">Manfrotto Tripod</span><span class="equipment-section">Accessories · Media Lab</span></div></div></td><td><span class="quantity">2</span></td><td><time class="item-date" datetime="2026-10-10">Oct 10, 2026</time></td><td><time class="item-date" datetime="2026-10-14">Oct 14, 2026</time></td><td><span class="status status-borrowed">borrowed</span></td><td><div class="row-actions"><button type="button" class="button button-small " data-action="return" data-group="checkout:101:125" data-item="359" aria-label="Return Item for Manfrotto Tripod, request #359">Return Item</button></div></td></tr></tbody></table></div><footer class="card-footer"><p class="item-summary" data-item-summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/></svg><span><strong>2 unique items</strong> (3 units total)</span></p><div class="footer-actions" data-request-actions><button type="button" class="button button-small " data-action="details" data-group="checkout:101:125" aria-label="View Details for request #358">View Details</button><button type="button" class="button button-small button-primary" data-action="return" data-group="checkout:101:125" aria-label="Mark All as Returned for request #358">Mark All as Returned</button></div></footer></article>
+<article class="request-card" data-group="checkout:102:124" data-request-id="356" data-status="pending" data-total-items="2" data-visible-items="2" aria-labelledby="request-356"><header class="card-header"><div><div class="card-reference"><h2 id="request-356">Request #356</h2><span class="checkout-reference">Checkout #124</span></div><p class="card-meta"><span class="card-user"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Adrian Reyes</span><span class="meta-dot" aria-hidden="true">·</span><span>Created <time datetime="2026-10-10">Oct 10, 2026</time></span></p></div><div class="status-stack"><span class="status status-pending">pending</span></div></header><p class="scroll-hint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18m-4-4 4 4-4 4M7 8l-4 4 4 4"/></svg>Swipe to see all item details</p><div class="table-scroll" tabindex="0" role="region" aria-label="Items in request #356"><table class="items-table"><caption class="sr-only">Equipment and individual statuses for request #356</caption><thead><tr><th scope="col">Equipment / Section</th><th scope="col">Qty</th><th scope="col">Pick Up Date</th><th scope="col">Return By</th><th scope="col">Item Status</th><th scope="col">Action</th></tr></thead><tbody><tr data-status="pending" data-request-id="356" data-equipment-id="31" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="7" width="18" height="11" rx="2"/><circle cx="16" cy="12.5" r="2.5"/><path d="M6 10h3M6 13h3M6 18v2M18 18v2"/></svg></span><div><span class="equipment-name">Epson EB-X49 Projector</span><span class="equipment-section">Presentation · AV Room</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-12">Oct 12, 2026</time></td><td><time class="item-date" datetime="2026-10-15">Oct 15, 2026</time></td><td><span class="status status-pending">pending</span></td><td><div class="row-actions"><button type="button" class="button button-small button-primary" data-action="approve" data-group="checkout:102:124" data-item="356" aria-label="Approve for Epson EB-X49 Projector, request #356">Approve</button><button type="button" class="button button-small button-danger" data-action="reject" data-group="checkout:102:124" data-item="356" aria-label="Reject for Epson EB-X49 Projector, request #356">Reject</button></div></td></tr><tr data-status="pending" data-request-id="357" data-equipment-id="32" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span><div><span class="equipment-name">Wireless Presenter</span><span class="equipment-section">Accessories · AV Room</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-12">Oct 12, 2026</time></td><td><time class="item-date" datetime="2026-10-15">Oct 15, 2026</time></td><td><span class="status status-pending">pending</span></td><td><div class="row-actions"><button type="button" class="button button-small button-primary" data-action="approve" data-group="checkout:102:124" data-item="357" aria-label="Approve for Wireless Presenter, request #357">Approve</button><button type="button" class="button button-small button-danger" data-action="reject" data-group="checkout:102:124" data-item="357" aria-label="Reject for Wireless Presenter, request #357">Reject</button></div></td></tr></tbody></table></div><footer class="card-footer"><p class="item-summary" data-item-summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/></svg><span><strong>2 unique items</strong> (2 units total)</span></p><div class="footer-actions" data-request-actions><button type="button" class="button button-small " data-action="details" data-group="checkout:102:124" aria-label="View Details for request #356">View Details</button><button type="button" class="button button-small button-danger" data-action="reject" data-group="checkout:102:124" aria-label="Reject for request #356">Reject</button><button type="button" class="button button-small button-primary" data-action="approve" data-group="checkout:102:124" aria-label="Approve All for request #356">Approve All</button></div></footer></article>
+<article class="request-card" data-group="checkout:103:122" data-request-id="352" data-status="approved" data-total-items="2" data-visible-items="2" aria-labelledby="request-352"><header class="card-header"><div><div class="card-reference"><h2 id="request-352">Request #352</h2><span class="checkout-reference">Checkout #122</span></div><p class="card-meta"><span class="card-user"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Sofia Cruz</span><span class="meta-dot" aria-hidden="true">·</span><span>Created <time datetime="2026-10-09">Oct 9, 2026</time></span></p></div><div class="status-stack"><span class="status status-approved">approved</span></div></header><p class="scroll-hint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18m-4-4 4 4-4 4M7 8l-4 4 4 4"/></svg>Swipe to see all item details</p><div class="table-scroll" tabindex="0" role="region" aria-label="Items in request #352"><table class="items-table"><caption class="sr-only">Equipment and individual statuses for request #352</caption><thead><tr><th scope="col">Equipment / Section</th><th scope="col">Qty</th><th scope="col">Pick Up Date</th><th scope="col">Return By</th><th scope="col">Item Status</th><th scope="col">Action</th></tr></thead><tbody><tr data-status="approved" data-request-id="352" data-equipment-id="41" data-quantity="2"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg></span><div><span class="equipment-name">Shure SM58 Microphone</span><span class="equipment-section">Audio · Performing Arts</span></div></div></td><td><span class="quantity">2</span></td><td><time class="item-date" datetime="2026-10-11">Oct 11, 2026</time></td><td><time class="item-date" datetime="2026-10-13">Oct 13, 2026</time></td><td><span class="status status-approved">approved</span></td><td><div class="row-actions"><button type="button" class="button button-small " data-action="pickup" data-group="checkout:103:122" data-item="352" aria-label="Mark as borrowed for Shure SM58 Microphone, request #352">Mark as borrowed</button></div></td></tr><tr data-status="approved" data-request-id="353" data-equipment-id="42" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="16" r="3.5"/></svg></span><div><span class="equipment-name">JBL Portable Speaker</span><span class="equipment-section">Audio · Performing Arts</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-11">Oct 11, 2026</time></td><td><time class="item-date" datetime="2026-10-13">Oct 13, 2026</time></td><td><span class="status status-approved">approved</span></td><td><div class="row-actions"><button type="button" class="button button-small " data-action="pickup" data-group="checkout:103:122" data-item="353" aria-label="Mark as borrowed for JBL Portable Speaker, request #353">Mark as borrowed</button></div></td></tr></tbody></table></div><footer class="card-footer"><p class="item-summary" data-item-summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/></svg><span><strong>2 unique items</strong> (3 units total)</span></p><div class="footer-actions" data-request-actions><button type="button" class="button button-small " data-action="details" data-group="checkout:103:122" aria-label="View Details for request #352">View Details</button><button type="button" class="button button-small button-primary" data-action="pickup" data-group="checkout:103:122" aria-label="Mark all as borrowed for request #352">Mark all as borrowed</button></div></footer></article>
+<article class="request-card" data-group="checkout:104:119" data-request-id="346" data-status="rejected" data-total-items="2" data-visible-items="2" aria-labelledby="request-346"><header class="card-header"><div><div class="card-reference"><h2 id="request-346">Request #346</h2><span class="checkout-reference">Checkout #119</span></div><p class="card-meta"><span class="card-user"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Ethan Garcia</span><span class="meta-dot" aria-hidden="true">·</span><span>Created <time datetime="2026-10-08">Oct 8, 2026</time></span></p></div><div class="status-stack"><span class="status status-rejected">rejected</span></div></header><p class="scroll-hint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18m-4-4 4 4-4 4M7 8l-4 4 4 4"/></svg>Swipe to see all item details</p><div class="table-scroll" tabindex="0" role="region" aria-label="Items in request #346"><table class="items-table"><caption class="sr-only">Equipment and individual statuses for request #346</caption><thead><tr><th scope="col">Equipment / Section</th><th scope="col">Qty</th><th scope="col">Pick Up Date</th><th scope="col">Return By</th><th scope="col">Item Status</th><th scope="col">Action</th></tr></thead><tbody><tr data-status="rejected" data-request-id="346" data-equipment-id="51" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="3" width="16" height="13" rx="2"/><path d="m4 16-2 5h20l-2-5M9 18h6"/></svg></span><div><span class="equipment-name">Dell Latitude 5420</span><span class="equipment-section">Computing · IT Services</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-10">Oct 10, 2026</time></td><td><time class="item-date" datetime="2026-10-12">Oct 12, 2026</time></td><td><span class="status status-rejected">rejected</span></td><td><div class="row-actions"><span class="no-action">—<span class="sr-only"> No action available</span></span></div></td></tr><tr data-status="rejected" data-request-id="347" data-equipment-id="52" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span><div><span class="equipment-name">HDMI Adapter Kit</span><span class="equipment-section">Accessories · IT Services</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-10">Oct 10, 2026</time></td><td><time class="item-date" datetime="2026-10-12">Oct 12, 2026</time></td><td><span class="status status-rejected">rejected</span></td><td><div class="row-actions"><span class="no-action">—<span class="sr-only"> No action available</span></span></div></td></tr></tbody></table></div><p class="card-note"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>Equipment was reserved for a campus event. Please choose another pickup date.</p><footer class="card-footer"><p class="item-summary" data-item-summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/></svg><span><strong>2 unique items</strong> (2 units total)</span></p><div class="footer-actions" data-request-actions><button type="button" class="button button-small " data-action="details" data-group="checkout:104:119" aria-label="View Details for request #346">View Details</button></div></footer></article>
+<article class="request-card" data-group="checkout:101:114" data-request-id="331" data-status="returned" data-total-items="2" data-visible-items="2" aria-labelledby="request-331"><header class="card-header"><div><div class="card-reference"><h2 id="request-331">Request #331</h2><span class="checkout-reference">Checkout #114</span></div><p class="card-meta"><span class="card-user"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Maya Santos</span><span class="meta-dot" aria-hidden="true">·</span><span>Created <time datetime="2026-10-01">Oct 1, 2026</time></span></p></div><div class="status-stack"><span class="status status-returned">returned</span></div></header><p class="scroll-hint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18m-4-4 4 4-4 4M7 8l-4 4 4 4"/></svg>Swipe to see all item details</p><div class="table-scroll" tabindex="0" role="region" aria-label="Items in request #331"><table class="items-table"><caption class="sr-only">Equipment and individual statuses for request #331</caption><thead><tr><th scope="col">Equipment / Section</th><th scope="col">Qty</th><th scope="col">Pick Up Date</th><th scope="col">Return By</th><th scope="col">Item Status</th><th scope="col">Action</th></tr></thead><tbody><tr data-status="returned" data-request-id="331" data-equipment-id="21" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 6h3l2-3h4l2 3h3a2 2 0 0 1 2 2v11H3V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></svg></span><div><span class="equipment-name">Canon EOS 80D</span><span class="equipment-section">Photography · Media Lab</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-02">Oct 2, 2026</time></td><td><time class="item-date" datetime="2026-10-05">Oct 5, 2026</time></td><td><span class="status status-returned">returned</span></td><td><div class="row-actions"><span class="no-action">—<span class="sr-only"> No action available</span></span></div></td></tr><tr data-status="returned" data-request-id="332" data-equipment-id="22" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 4h10v5H7zM12 9v12M12 12 5 21M12 12l7 9"/></svg></span><div><span class="equipment-name">Manfrotto Tripod</span><span class="equipment-section">Accessories · Media Lab</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-10-02">Oct 2, 2026</time></td><td><time class="item-date" datetime="2026-10-05">Oct 5, 2026</time></td><td><span class="status status-returned">returned</span></td><td><div class="row-actions"><span class="no-action">—<span class="sr-only"> No action available</span></span></div></td></tr></tbody></table></div><footer class="card-footer"><p class="item-summary" data-item-summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/></svg><span><strong>2 unique items</strong> (2 units total)</span></p><div class="footer-actions" data-request-actions><button type="button" class="button button-small " data-action="details" data-group="checkout:101:114" aria-label="View Details for request #331">View Details</button></div></footer></article>
+<article class="request-card" data-group="checkout:105:110" data-request-id="320" data-status="cancelled" data-total-items="2" data-visible-items="2" aria-labelledby="request-320"><header class="card-header"><div><div class="card-reference"><h2 id="request-320">Request #320</h2><span class="checkout-reference">Checkout #110</span></div><p class="card-meta"><span class="card-user"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>Leah Mendoza</span><span class="meta-dot" aria-hidden="true">·</span><span>Created <time datetime="2026-09-26">Sep 26, 2026</time></span></p></div><div class="status-stack"><span class="status status-cancelled">cancelled</span></div></header><p class="scroll-hint"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18m-4-4 4 4-4 4M7 8l-4 4 4 4"/></svg>Swipe to see all item details</p><div class="table-scroll" tabindex="0" role="region" aria-label="Items in request #320"><table class="items-table"><caption class="sr-only">Equipment and individual statuses for request #320</caption><thead><tr><th scope="col">Equipment / Section</th><th scope="col">Qty</th><th scope="col">Pick Up Date</th><th scope="col">Return By</th><th scope="col">Item Status</th><th scope="col">Action</th></tr></thead><tbody><tr data-status="cancelled" data-request-id="320" data-equipment-id="41" data-quantity="2"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg></span><div><span class="equipment-name">Shure SM58 Microphone</span><span class="equipment-section">Audio · Performing Arts</span></div></div></td><td><span class="quantity">2</span></td><td><time class="item-date" datetime="2026-09-29">Sep 29, 2026</time></td><td><time class="item-date" datetime="2026-10-01">Oct 1, 2026</time></td><td><span class="status status-cancelled">cancelled</span></td><td><div class="row-actions"><span class="no-action">—<span class="sr-only"> No action available</span></span></div></td></tr><tr data-status="cancelled" data-request-id="321" data-equipment-id="42" data-quantity="1"><td><div class="equipment-cell"><span class="equipment-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="16" r="3.5"/></svg></span><div><span class="equipment-name">JBL Portable Speaker</span><span class="equipment-section">Audio · Performing Arts</span></div></div></td><td><span class="quantity">1</span></td><td><time class="item-date" datetime="2026-09-29">Sep 29, 2026</time></td><td><time class="item-date" datetime="2026-10-01">Oct 1, 2026</time></td><td><span class="status status-cancelled">cancelled</span></td><td><div class="row-actions"><span class="no-action">—<span class="sr-only"> No action available</span></span></div></td></tr></tbody></table></div><footer class="card-footer"><p class="item-summary" data-item-summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/></svg><span><strong>2 unique items</strong> (3 units total)</span></p><div class="footer-actions" data-request-actions><button type="button" class="button button-small " data-action="details" data-group="checkout:105:110" aria-label="View Details for request #320">View Details</button></div></footer></article>
       </div>
-    </div>
-
-    <div id="borrowingFeedback" class="cart-notice mb-3" role="status" aria-live="polite" hidden></div>
-    <div class="borrowing-toolbar" id="borrowingToolbar" hidden>
-      <p id="borrowingCount" role="status" aria-live="polite"></p>
-      <button class="btn btn-sm btn-outline-secondary" type="button" id="refreshBorrowings">Refresh</button>
-    </div>
-    <div id="requestList" aria-busy="true"><div class="empty">Loading…</div></div>
-
-    <nav class="d-flex justify-content-between align-items-center mt-3" id="pager" hidden>
-      <button class="btn btn-outline-secondary btn-sm" id="prevPage">Previous</button>
-      <span class="borrowing-meta" id="pageLabel"></span>
-      <button class="btn btn-outline-secondary btn-sm" id="nextPage">Next</button>
-    </nav>
-  </main>
-</div>
-
-<div class="modal fade" id="borrowingDetailsModal" tabindex="-1" aria-labelledby="borrowingDetailsTitle">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title h5" id="borrowingDetailsTitle">Borrowing details</h2>
-        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="borrowingDetailsBody"></div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
-    </div>
+      <noscript><p class="notice">The sample transactions are displayed above. Enable JavaScript to use filters, view details, and manage requests.</p></noscript>
+      <footer class="page-footer"><span>Equipment Desk · Thoughtful management. Better borrowing.</span><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg>Individual item statuses stay in sync</span></footer>
+    </main>
   </div>
-</div>
+  <dialog class="dialog" id="detailsDialog" aria-labelledby="detailsTitle"><header class="dialog-header"><h2 id="detailsTitle">Request details</h2><button type="button" class="icon-button" data-close="detailsDialog" aria-label="Close request details"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button></header><div class="dialog-body" id="detailsBody"></div><footer class="dialog-footer"><button type="button" class="button" data-close="detailsDialog">Close</button></footer></dialog>
+  <dialog class="dialog" id="actionDialog" aria-labelledby="actionTitle" aria-describedby="actionDescription"><form id="actionForm"><header class="dialog-header"><h2 id="actionTitle">Confirm action</h2><button type="button" class="icon-button" data-close="actionDialog" aria-label="Close confirmation"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M6 18 18 6"/></svg></button></header><div class="dialog-body"><p id="actionDescription"></p><p id="actionItems" style="margin-top:12px;font-weight:600"></p><div class="return-fields" id="returnFields" hidden><div class="field"><label for="conditionStatus">Returned condition</label><select id="conditionStatus" aria-describedby="conditionHint"><option value="good">Good — ready for the next borrower</option><option value="damaged">Damaged</option><option value="missing">Missing parts</option><option value="under_repair">Needs repair</option></select><p id="conditionHint">Good equipment becomes available again.</p></div><div class="field"><label for="returnRemarks">Remarks <span style="font-weight:400">(optional)</span></label><textarea id="returnRemarks" rows="3" maxlength="500" placeholder="Anything the next borrower should know"></textarea></div></div><p class="sample-note" id="actionPreviewNote" style="margin:16px 0 0">This updates sample data only. Changes reset when you reload.</p><p class="notice error" id="actionError" role="alert" style="margin:15px 0 0" hidden></p></div><footer class="dialog-footer"><button type="button" class="button" data-close="actionDialog">Go Back</button><button type="submit" class="button button-primary" id="actionSubmit">Confirm</button></footer></form></dialog>
+  <script src="assets/js/sidebar.js?v=sidebar-v3"></script>
+  <script>
+    EquipmentSidebar.mount(document.getElementById('sidebar'), { name: 'Alex Morgan', role: 'admin' }, { standalone: true, cartCount: 3, unreadCount: 3, preview: true });
+  </script>
+  <script>
+const iconPaths = {"box":"<path d=\"m12 3 9 5v8l-9 5-9-5V8l9-5Z\"/><path d=\"m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5\"/>","grid":"<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>","equipment":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"13\" rx=\"2\"/><path d=\"M8 21h8M12 17v4\"/>","cart":"<path d=\"M2 3h3l3 12h10l3-9H6\"/><circle cx=\"9\" cy=\"20\" r=\"1\"/><circle cx=\"18\" cy=\"20\" r=\"1\"/>","clipboard":"<rect x=\"5\" y=\"5\" width=\"14\" height=\"16\" rx=\"2\"/><rect x=\"9\" y=\"3\" width=\"6\" height=\"4\" rx=\"1\"/><path d=\"M9 12h6M9 16h6\"/>","bell":"<path d=\"M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4\"/>","people":"<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/>","user":"<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21v-2a8 8 0 0 1 16 0v2\"/>","clock":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>","check":"<path d=\"m5 12 4 4L19 6\"/>","checkCircle":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m8 12 3 3 5-6\"/>","arrow":"<path d=\"M5 12h14m-5-5 5 5-5 5\"/>","chevron":"<path d=\"m9 5 7 7-7 7\"/>","refresh":"<path d=\"M20 7v5h-5M4 17v-5h5\"/><path d=\"M6.1 6a8 8 0 0 1 13.1 2.8M17.9 18A8 8 0 0 1 4.8 15.2\"/>","search":"<circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m16 16 5 5\"/>","calendar":"<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2\"/>","camera":"<path d=\"M5 6h3l2-3h4l2 3h3a2 2 0 0 1 2 2v11H3V8a2 2 0 0 1 2-2Z\"/><circle cx=\"12\" cy=\"12\" r=\"4\"/>","tripod":"<path d=\"M7 4h10v5H7zM12 9v12M12 12 5 21M12 12l7 9\"/>","projector":"<rect x=\"3\" y=\"7\" width=\"18\" height=\"11\" rx=\"2\"/><circle cx=\"16\" cy=\"12.5\" r=\"2.5\"/><path d=\"M6 10h3M6 13h3M6 18v2M18 18v2\"/>","mic":"<rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"/><path d=\"M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8\"/>","speaker":"<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"2\"/><circle cx=\"12\" cy=\"7\" r=\"1.5\"/><circle cx=\"12\" cy=\"16\" r=\"3.5\"/>","laptop":"<rect x=\"4\" y=\"3\" width=\"16\" height=\"13\" rx=\"2\"/><path d=\"m4 16-2 5h20l-2-5M9 18h6\"/>","info":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 11v6M12 7h.01\"/>","shield":"<path d=\"m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z\"/><path d=\"m8 12 3 3 5-6\"/>","sort":"<path d=\"M8 4v16m-3-3 3 3 3-3M15 4h6M15 9h4M15 14h2\"/>","menu":"<path d=\"M4 6h16M4 12h16M4 18h16\"/>","close":"<path d=\"m6 6 12 12M6 18 18 6\"/>","scroll":"<path d=\"M3 12h18m-4-4 4 4-4 4M7 8l-4 4 4 4\"/>"};
+const SAMPLE_ROWS = [
+  {
+    "request_id": 358,
+    "checkout_id": 125,
+    "user_id": 101,
+    "user_name": "Maya Santos",
+    "request_date": "2026-10-10 10:32:00",
+    "equipment_id": 21,
+    "equipment_name": "Canon EOS 80D",
+    "category_name": "Photography · Media Lab",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-10",
+    "expected_return_date": "2026-10-14",
+    "status": "borrowed",
+    "icon": "camera",
+    "picked_up_at": "2026-10-10 11:00:00"
+  },
+  {
+    "request_id": 359,
+    "checkout_id": 125,
+    "user_id": 101,
+    "user_name": "Maya Santos",
+    "request_date": "2026-10-10 10:32:00",
+    "equipment_id": 22,
+    "equipment_name": "Manfrotto Tripod",
+    "category_name": "Accessories · Media Lab",
+    "requested_quantity": 2,
+    "borrow_date": "2026-10-10",
+    "expected_return_date": "2026-10-14",
+    "status": "borrowed",
+    "icon": "tripod",
+    "picked_up_at": "2026-10-10 11:00:00"
+  },
+  {
+    "request_id": 356,
+    "checkout_id": 124,
+    "user_id": 102,
+    "user_name": "Adrian Reyes",
+    "request_date": "2026-10-10 09:15:00",
+    "equipment_id": 31,
+    "equipment_name": "Epson EB-X49 Projector",
+    "category_name": "Presentation · AV Room",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-12",
+    "expected_return_date": "2026-10-15",
+    "status": "pending",
+    "icon": "projector"
+  },
+  {
+    "request_id": 357,
+    "checkout_id": 124,
+    "user_id": 102,
+    "user_name": "Adrian Reyes",
+    "request_date": "2026-10-10 09:15:00",
+    "equipment_id": 32,
+    "equipment_name": "Wireless Presenter",
+    "category_name": "Accessories · AV Room",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-12",
+    "expected_return_date": "2026-10-15",
+    "status": "pending",
+    "icon": "equipment"
+  },
+  {
+    "request_id": 352,
+    "checkout_id": 122,
+    "user_id": 103,
+    "user_name": "Sofia Cruz",
+    "request_date": "2026-10-09 14:20:00",
+    "equipment_id": 41,
+    "equipment_name": "Shure SM58 Microphone",
+    "category_name": "Audio · Performing Arts",
+    "requested_quantity": 2,
+    "borrow_date": "2026-10-11",
+    "expected_return_date": "2026-10-13",
+    "status": "approved",
+    "icon": "mic"
+  },
+  {
+    "request_id": 353,
+    "checkout_id": 122,
+    "user_id": 103,
+    "user_name": "Sofia Cruz",
+    "request_date": "2026-10-09 14:20:00",
+    "equipment_id": 42,
+    "equipment_name": "JBL Portable Speaker",
+    "category_name": "Audio · Performing Arts",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-11",
+    "expected_return_date": "2026-10-13",
+    "status": "approved",
+    "icon": "speaker"
+  },
+  {
+    "request_id": 346,
+    "checkout_id": 119,
+    "user_id": 104,
+    "user_name": "Ethan Garcia",
+    "request_date": "2026-10-08 11:05:00",
+    "equipment_id": 51,
+    "equipment_name": "Dell Latitude 5420",
+    "category_name": "Computing · IT Services",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-10",
+    "expected_return_date": "2026-10-12",
+    "status": "rejected",
+    "icon": "laptop",
+    "note": "Equipment was reserved for a campus event. Please choose another pickup date."
+  },
+  {
+    "request_id": 347,
+    "checkout_id": 119,
+    "user_id": 104,
+    "user_name": "Ethan Garcia",
+    "request_date": "2026-10-08 11:05:00",
+    "equipment_id": 52,
+    "equipment_name": "HDMI Adapter Kit",
+    "category_name": "Accessories · IT Services",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-10",
+    "expected_return_date": "2026-10-12",
+    "status": "rejected",
+    "icon": "equipment"
+  },
+  {
+    "request_id": 331,
+    "checkout_id": 114,
+    "user_id": 101,
+    "user_name": "Maya Santos",
+    "request_date": "2026-10-01 08:40:00",
+    "equipment_id": 21,
+    "equipment_name": "Canon EOS 80D",
+    "category_name": "Photography · Media Lab",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-02",
+    "expected_return_date": "2026-10-05",
+    "status": "returned",
+    "icon": "camera"
+  },
+  {
+    "request_id": 332,
+    "checkout_id": 114,
+    "user_id": 101,
+    "user_name": "Maya Santos",
+    "request_date": "2026-10-01 08:40:00",
+    "equipment_id": 22,
+    "equipment_name": "Manfrotto Tripod",
+    "category_name": "Accessories · Media Lab",
+    "requested_quantity": 1,
+    "borrow_date": "2026-10-02",
+    "expected_return_date": "2026-10-05",
+    "status": "returned",
+    "icon": "tripod"
+  },
+  {
+    "request_id": 320,
+    "checkout_id": 110,
+    "user_id": 105,
+    "user_name": "Leah Mendoza",
+    "request_date": "2026-09-26 15:10:00",
+    "equipment_id": 41,
+    "equipment_name": "Shure SM58 Microphone",
+    "category_name": "Audio · Performing Arts",
+    "requested_quantity": 2,
+    "borrow_date": "2026-09-29",
+    "expected_return_date": "2026-10-01",
+    "status": "cancelled",
+    "icon": "mic"
+  },
+  {
+    "request_id": 321,
+    "checkout_id": 110,
+    "user_id": 105,
+    "user_name": "Leah Mendoza",
+    "request_date": "2026-09-26 15:10:00",
+    "equipment_id": 42,
+    "equipment_name": "JBL Portable Speaker",
+    "category_name": "Audio · Performing Arts",
+    "requested_quantity": 1,
+    "borrow_date": "2026-09-29",
+    "expected_return_date": "2026-10-01",
+    "status": "cancelled",
+    "icon": "speaker"
+  }
+];
 
-<div class="modal fade" id="borrowingReturnModal" tabindex="-1" aria-labelledby="borrowingReturnTitle" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title h5" id="borrowingReturnTitle">Mark equipment as Returned</h2>
-        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form id="returnForm" novalidate>
-        <div class="modal-body">
-          <p class="fw-semibold" id="returnItemName"></p>
-          <div id="returnError" class="cart-notice cart-error mb-3" role="alert" hidden></div>
-          <div class="mb-3">
-            <label class="form-label" for="conditionStatus">Condition</label>
-            <select class="form-select" id="conditionStatus">
-              <option value="good">Good — back on the shelf</option>
-              <option value="damaged">Damaged</option>
-              <option value="missing">Missing parts</option>
-              <option value="under_repair">Needs repair</option>
-            </select>
-            <div class="form-text" id="conditionHint">The item goes straight back to available.</div>
-          </div>
-          <label class="form-label" for="returnRemarks">Remarks</label>
-          <textarea class="form-control" id="returnRemarks" rows="3" maxlength="500" placeholder="Anything the next borrower should know"></textarea>
-          <div class="field-error" data-error-for="returnRemarks"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit" id="returnSubmit">Mark as Returned</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+const escapeHTML = function(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));};
 
-<div id="toastZone"></div>
+const icon = function(name){return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+(iconPaths[name] || iconPaths.box)+'</svg>';};
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/api.js?v=borrowing-management-v1"></script>
-<script src="assets/js/app.js?v=staff-navigation-v3"></script>
-<script src="assets/js/requests.js?v=customer-status-v3"></script>
+const dateLabel = function(value){var v=String(value || '').slice(0,10); if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return '—'; var [y,m,d]=v.split('-').map(Number);return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,d)));};
+
+const badge = function(status){var valid=['pending','approved','borrowed','returned','rejected','cancelled'].includes(status);return '<span class="status status-'+(valid?status:'returned')+'">'+escapeHTML(valid?status:'Unavailable')+'</span>';};
+
+const groupRows = function(rows){var map=new Map(); var seen=new Set(); for(var row of rows){if(seen.has(String(row.request_id)))continue;seen.add(String(row.request_id));var key=row.checkout_id != null ? 'checkout:'+row.user_id+':'+row.checkout_id:'request:'+row.request_id; if(!map.has(key))map.set(key,{key,id:row.request_id,checkout:row.checkout_id,name:row.user_name,created:row.request_date,items:[]}); map.get(key).items.push(row);} return [...map.values()].sort((a,b)=>String(b.created).localeCompare(String(a.created)) || Number(b.id)-Number(a.id));};
+
+const overallStatus = function(group){var states=group.items.map(i=>i.status);return ['borrowed','pending','approved','rejected','cancelled','returned'].find(s=>states.includes(s)) || 'returned';};
+
+const actionButton = function(action,label,group,item,style=''){var scope=item?' data-item="'+escapeHTML(item.request_id)+'"':'';return '<button type="button" class="button button-small '+style+'" data-action="'+action+'" data-group="'+escapeHTML(group.key)+'"'+scope+' aria-label="'+escapeHTML(label+' for '+(item?item.equipment_name+', request #'+item.request_id:'request #'+group.id))+'">'+label+'</button>';};
+
+const cardMarkup = function(group, desk) {
+  const items = group.items;
+  if (!items.length) return '';
+  const totalItems = group.totalItemCount ?? items.length;
+  const filtered = group.statusFiltered === true;
+  const statuses = new Set(items.map(item => item.status));
+  const state = overallStatus(group);
+  const returned = items.filter(item => item.status === 'returned').length;
+  const unique = new Set(items.map(item => item.equipment_id)).size;
+  const units = items.reduce((total, item) => total + Number(item.requested_quantity), 0);
+
+  function rowActions(item) {
+    if (!desk) {
+      return item.status === 'pending'
+        ? actionButton('cancel', 'Cancel Request', group, item, 'button-danger')
+        : '<span class="no-action">—<span class="sr-only"> No action available</span></span>';
+    }
+    if (item.status === 'pending') {
+      return actionButton('approve', 'Approve', group, item, 'button-primary') +
+        actionButton('reject', 'Reject', group, item, 'button-danger');
+    }
+    if (item.status === 'approved') return actionButton('pickup', 'Mark as borrowed', group, item);
+    if (item.status === 'borrowed') return actionButton('return', 'Return Item', group, item);
+    return '<span class="no-action">—<span class="sr-only"> No action available</span></span>';
+  }
+
+  let footerActions = actionButton('details', 'View Details', group, null);
+  if (desk) {
+    if (items.some(item => item.status === 'pending')) {
+      footerActions += actionButton('reject', filtered ? 'Reject Visible Items' : 'Reject', group, null, 'button-danger');
+      footerActions += actionButton('approve', filtered ? 'Approve Visible Items' : 'Approve All', group, null, 'button-primary');
+    }
+    if (items.some(item => item.status === 'borrowed')) {
+      footerActions += actionButton('return', filtered ? 'Mark Visible Items as Returned' : 'Mark All as Returned', group, null, 'button-primary');
+    }
+    if (items.some(item => item.status === 'approved')) {
+      footerActions += actionButton('pickup', 'Mark all as borrowed', group, null, 'button-primary');
+    }
+  }
+
+  const note = items.find(item => item.note)?.note;
+  const partial = returned && statuses.size > 1
+    ? returned + ' of ' + items.length + ' items returned'
+    : statuses.size > 1 ? 'Mixed item statuses' : '';
+  const summary = filtered
+    ? '<strong>Showing ' + items.length + ' of ' + totalItems + ' ' + (totalItems === 1 ? 'item' : 'items') + ' in this request</strong> (' + units + ' ' + (units === 1 ? 'unit' : 'units') + ' total)'
+    : '<strong>' + unique + ' unique ' + (unique === 1 ? 'item' : 'items') + '</strong> (' + units + ' ' + (units === 1 ? 'unit' : 'units') + ' total)';
+
+  const itemRows = items.map(item => [
+    '<tr data-status="' + escapeHTML(item.status) + '" data-request-id="' + escapeHTML(item.request_id) + '" data-equipment-id="' + escapeHTML(item.equipment_id) + '" data-quantity="' + escapeHTML(item.requested_quantity) + '">',
+    '<td><div class="equipment-cell"><span class="equipment-icon">' + icon(item.icon || 'equipment') + '</span><div><span class="equipment-name">' + escapeHTML(item.equipment_name) + '</span><span class="equipment-section">' + escapeHTML(item.category_name || 'General equipment') + '</span></div></div></td>',
+    '<td><span class="quantity">' + escapeHTML(item.requested_quantity) + '</span></td>',
+    '<td><time class="item-date" datetime="' + escapeHTML(item.borrow_date) + '">' + dateLabel(item.borrow_date) + '</time></td>',
+    '<td><time class="item-date" datetime="' + escapeHTML(item.expected_return_date) + '">' + dateLabel(item.expected_return_date) + '</time></td>',
+    '<td>' + badge(item.status) + '</td>',
+    '<td><div class="row-actions">' + rowActions(item) + '</div></td></tr>'
+  ].join('')).join('');
+
+  return [
+    '<article class="request-card" data-group="' + escapeHTML(group.key) + '" data-request-id="' + escapeHTML(group.id) + '" data-status="' + escapeHTML(state) + '" data-total-items="' + totalItems + '" data-visible-items="' + items.length + '" aria-labelledby="request-' + escapeHTML(group.id) + '">',
+    '<header class="card-header"><div><div class="card-reference"><h2 id="request-' + escapeHTML(group.id) + '">Request #' + escapeHTML(group.id) + '</h2>',
+    group.checkout != null ? '<span class="checkout-reference">Checkout #' + escapeHTML(group.checkout) + '</span>' : '',
+    '</div><p class="card-meta"><span class="card-user">' + icon('user') + escapeHTML(group.name) + '</span><span class="meta-dot" aria-hidden="true">·</span><span>Created <time datetime="' + escapeHTML(String(group.created).slice(0,10)) + '">' + dateLabel(group.created) + '</time></span></p></div>',
+    '<div class="status-stack">' + badge(state) + (partial ? '<span class="partial-label">' + partial + '</span>' : '') + '</div></header>',
+    '<p class="scroll-hint">' + icon('scroll') + 'Swipe to see all item details</p>',
+    '<div class="table-scroll" tabindex="0" role="region" aria-label="Items in request #' + escapeHTML(group.id) + '"><table class="items-table">',
+    '<caption class="sr-only">Equipment and individual statuses for request #' + escapeHTML(group.id) + '</caption>',
+    '<thead><tr><th scope="col">Equipment / Section</th><th scope="col">Qty</th><th scope="col">Pick Up Date</th><th scope="col">Return By</th><th scope="col">Item Status</th><th scope="col">Action</th></tr></thead><tbody>',
+    itemRows,
+    '</tbody></table></div>',
+    note ? '<p class="card-note">' + icon('info') + escapeHTML(note) + '</p>' : '',
+    '<footer class="card-footer"><p class="item-summary" data-item-summary>' + icon('box') + '<span>' + summary + '</span></p><div class="footer-actions" data-request-actions>' + footerActions + '</div></footer></article>'
+  ].join('');
+};
+
+/* Samples run locally; authenticated HTTP sessions use the existing PHP APIs.
+   Batch operations use per-item endpoints and explicitly report partial success. */
+(() => {
+  'use strict';
+  const desk = document.body.dataset.view === 'staff';
+  const $ = id => document.getElementById(id);
+  let rows = structuredClone(SAMPLE_ROWS), groups = groupRows(rows), activeStatus = 'all';
+  let visibleGroups = [];
+  let live = false, user = null, busy = true, loading = false, capabilities = null, pickupWindow = null;
+  let actionContext = null, lastTrigger = null, menuOpen = false, refreshTimer = null;
+  const allowedActions = desk ? ['approve','reject','pickup','return'] : ['cancel'];
+  const requiredStatus = {approve:'pending',reject:'pending',pickup:'approved',return:'borrowed',cancel:'pending'};
+  const nextStatus = {approve:'approved',reject:'rejected',pickup:'borrowed',return:'returned',cancel:'cancelled'};
+  const labels = {approve:'Approve',reject:'Reject',pickup:'Mark as borrowed',return:'Mark as Returned',cancel:'Cancel Request'};
+
+  async function api(endpoint, options = {}) {
+    const response = await fetch('api/' + endpoint, {
+      credentials:'same-origin', headers:{'Content-Type':'application/json'},
+      signal:AbortSignal.timeout(12000), ...options
+    });
+    let payload;
+    try { payload = await response.json(); }
+    catch { const error = new Error('The server returned an unreadable response. Please try again.'); error.status = response.status; throw error; }
+    if (!response.ok || payload.success === false) {
+      const error = new Error(payload.message || 'The request could not be completed.');
+      error.status = response.status; throw error;
+    }
+    return payload;
+  }
+
+  function notify(message, error = false) {
+    $('feedback').hidden = false;
+    $('feedback').className = 'notice' + (error ? ' error' : '');
+    $('feedback').textContent = message;
+  }
+
+  function pickupReason(item) {
+    if (!live) return '';
+    if (capabilities?.pickup_available !== true) return 'Pickup tracking is unavailable. Refresh to check again.';
+    if (!pickupWindow?.min_date) return 'The current pickup date could not be verified.';
+    if (item.picked_up_at) return 'A pickup is already recorded.';
+    if (pickupWindow.min_date < item.borrow_date) return 'Pickup starts on ' + dateLabel(item.borrow_date) + '.';
+    if (pickupWindow.min_date > item.expected_return_date) return 'The agreed return date has passed.';
+    return '';
+  }
+
+  function updateButtons() {
+    document.querySelectorAll('[data-action]').forEach(button => {
+      let reason = '';
+      if (button.dataset.action === 'pickup') {
+        const group = visibleGroups.find(g => g.key === button.dataset.group);
+        const selected = group?.items.filter(item => item.status === 'approved' && (!button.dataset.item || String(item.request_id) === button.dataset.item)) || [];
+        reason = selected.map(pickupReason).find(Boolean) || '';
+      }
+      button.disabled = busy || loading || Boolean(reason);
+      if (reason) button.title = reason;
+    });
+    $('refresh').disabled = busy || loading;
+  }
+
+  // Keep the full request history intact and render a separate filtered view.
+  function filterRequestsByStatus(status) {
+    const statuses = ['all', 'pending', 'approved', 'borrowed', 'returned', 'rejected', 'cancelled'];
+    const normalized = String(status || 'all').trim().toLowerCase();
+    const selectedStatus = normalized === 'all requests' ? 'all' : normalized;
+    if (!statuses.includes(selectedStatus)) return;
+    activeStatus = selectedStatus;
+    groups = groupRows(rows);
+
+    $('statusTabs').querySelectorAll('[role="tab"]').forEach(tab => {
+      const selected = tab.dataset.status === activeStatus;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    $('requestList').setAttribute('aria-labelledby', 'tab-' + activeStatus);
+    for (const value of statuses) {
+      const count = value === 'all' ? groups.length
+        : groups.filter(group => group.items.some(item => item.status === value)).length;
+      $('count-' + value).textContent = count;
+    }
+
+    const from = $('dateFrom').value;
+    const to = $('dateTo').value;
+    const search = ($('requestSearch')?.value || '').trim().toLowerCase();
+    const invalid = Boolean(from && to && from > to);
+    $('dateError').hidden = !invalid;
+    $('dateFrom').setAttribute('aria-invalid', String(invalid));
+    $('dateTo').setAttribute('aria-invalid', String(invalid));
+
+    visibleGroups = invalid ? [] : groups.map(group => ({
+      ...group,
+      totalItemCount: group.items.length,
+      statusFiltered: activeStatus !== 'all',
+      items: group.items.filter(item => activeStatus === 'all' || item.status === activeStatus)
+    })).filter(group => {
+      if (!group.items.length) return false;
+      const created = String(group.created).slice(0, 10);
+      const matchesSearch = !search || String(group.name || '').toLowerCase().includes(search)
+        || String(group.id).includes(search)
+        || group.items.some(item => String(item.request_id).includes(search))
+        || String(group.checkout ?? '').includes(search);
+      return matchesSearch && (!from || created >= from) && (!to || created <= to);
+    });
+
+    $('resultCount').textContent = invalid ? 'Check your date range'
+      : visibleGroups.length + (visibleGroups.length === 1 ? ' request' : ' requests');
+    $('resultDescription').textContent = invalid ? 'Created From must be on or before Created To.'
+      : 'Showing ' + visibleGroups.length + ' of ' + groups.length + (desk ? ' requests' : ' borrowings');
+    $('requestList').innerHTML = visibleGroups.length
+      ? visibleGroups.map(group => cardMarkup(group, desk)).join('')
+      : '<div class="empty-state">' + icon('search') + '<h3>' + (invalid ? 'Check your date range' : 'No requests found') + '</h3><p>' + (invalid ? 'Choose an end date on or after your start date.' : 'Try a different status, date range' + (desk ? ', or search.' : '.')) + '</p><button type="button" class="button" data-reset>Clear Filters</button></div>';
+    $('requestList').setAttribute('aria-busy', String(busy || loading));
+    updateButtons();
+
+    if ($('detailsDialog').open) {
+      const group = visibleGroups.find(entry => entry.key === $('detailsDialog').dataset.group);
+      if (group) $('detailsBody').innerHTML = detailsMarkup(group);
+      else $('detailsDialog').close();
+    }
+  }
+
+  // Reapply the selected tab after date/search changes, refreshes, or mutations.
+  function render() {
+    filterRequestsByStatus(activeStatus);
+  }
+  window.filterRequestsByStatus = filterRequestsByStatus;
+
+  function resetFilters() {
+    $('dateFrom').value = '';
+    $('dateTo').value = '';
+    if ($('requestSearch')) $('requestSearch').value = '';
+    filterRequestsByStatus('all');
+  }
+
+  function detailsMarkup(group) {
+    return '<dl class="details-meta"><div><dt>Requested by</dt><dd>' + escapeHTML(group.name) + '</dd></div><div><dt>Checkout reference</dt><dd>' + (group.checkout != null ? '#' + escapeHTML(group.checkout) : 'Individual request') + '</dd></div><div><dt>Created</dt><dd>' + dateLabel(group.created) + '</dd></div><div><dt>Overall status</dt><dd>' + badge(overallStatus(group)) + '</dd></div></dl>' + group.items.map(item => '<section class="detail-item"><div class="detail-item-heading"><h3>' + escapeHTML(item.equipment_name) + '</h3>' + badge(item.status) + '</div><p>' + escapeHTML(item.category_name || 'General equipment') + ' · Request #' + escapeHTML(item.request_id) + ' · ' + escapeHTML(item.requested_quantity) + ' units</p><p>Pick up ' + dateLabel(item.borrow_date) + ' · Return by ' + dateLabel(item.expected_return_date) + '</p>' + (item.picked_up_at ? '<p>Pickup recorded ' + dateLabel(item.picked_up_at) + '</p>' : '') + (item.note ? '<p>' + escapeHTML(item.note) + '</p>' : '') + (Array.isArray(item.status_history) && item.status_history.length ? '<ol class="history">' + item.status_history.map(entry => '<li>' + escapeHTML(entry.to_status) + ' · ' + dateLabel(entry.changed_at) + (entry.changed_by_name ? ' · ' + escapeHTML(entry.changed_by_name) : '') + '</li>').join('') + '</ol>' : '') + '</section>').join('');
+  }
+
+  function openDetails(group, trigger) {
+    lastTrigger = trigger;
+    $('detailsTitle').textContent = 'Request #' + group.id + ' details';
+    $('detailsBody').innerHTML = detailsMarkup(group);
+    $('detailsDialog').dataset.group = group.key;
+    $('detailsDialog').showModal();
+  }
+
+  function openAction(action, group, itemId, trigger) {
+    if (busy || loading || !allowedActions.includes(action)) return;
+    const targets = group.items.filter(item => item.status === requiredStatus[action] && (!itemId || String(item.request_id) === itemId));
+    if (!targets.length || (action === 'pickup' && targets.some(item => pickupReason(item)))) return;
+    if (live && !desk && targets.some(item => String(item.user_id) !== String(user.user_id))) return;
+    lastTrigger = trigger;
+    actionContext = {action, groupKey:group.key, ids:targets.map(item => item.request_id), title:'Request #' + group.id};
+    const actionLabel = action === 'pickup' && !itemId ? 'Mark all as borrowed' : labels[action];
+    $('actionTitle').textContent = actionLabel + (action !== 'pickup' && targets.length > 1 ? ' · ' + targets.length + ' items' : '');
+    const units = targets.reduce((n,item) => n + Number(item.requested_quantity),0);
+    $('actionDescription').textContent = (action === 'return' ? 'Record the return of ' : action === 'pickup' ? 'Confirm physical pickup of ' : labels[action] + ' for ') + units + (units === 1 ? ' unit' : ' units') + ' in Request #' + group.id + '. ' + (action === 'return' ? 'All units of each selected item will be returned. For different conditions, return items individually.' : action === 'cancel' ? 'Only pending items will be cancelled.' : 'Only eligible items will be updated.');
+    $('actionItems').textContent = targets.map(i => i.requested_quantity + ' × ' + i.equipment_name).join('; ');
+    $('returnFields').hidden = action !== 'return';
+    $('conditionStatus').value = 'good'; $('returnRemarks').value = '';
+    $('conditionHint').textContent = 'Good equipment becomes available again.';
+    $('actionPreviewNote').hidden = live;
+    $('actionError').hidden = true;
+    $('actionSubmit').textContent = actionLabel;
+    $('actionSubmit').className = 'button ' + (['reject','cancel'].includes(action) ? 'button-danger' : 'button-primary');
+    $('actionDialog').showModal();
+  }
+
+  function restoreFocus() {
+    if (lastTrigger?.isConnected) lastTrigger.focus();
+    else {
+      const group = groups.find(g => g.key === actionContext?.groupKey);
+      const target = (group ? $('request-' + group.id) : null) || $('resultCount');
+      if (target) { target.tabIndex = -1; target.focus(); }
+    }
+  }
+
+  async function loadHistory(background = false) {
+    if (!live || loading || (background && (busy || $('actionDialog').open))) return;
+    loading = true;
+    updateButtons();
+    if (!background) { busy = true; $('requestList').setAttribute('aria-busy','true'); updateButtons(); }
+    try {
+      if (desk) {
+        const metadata = await Promise.allSettled([api('requests/index.php?capabilities=1'),api('borrowing-settings/index.php')]);
+        capabilities = metadata[0].status === 'fulfilled' ? metadata[0].value.data : null;
+        pickupWindow = metadata[1].status === 'fulfilled' ? metadata[1].value.data : null;
+      }
+      const collected = [];
+      for (let page = 1; ; page++) {
+        const result = await api('requests/index.php?limit=50&page=' + page);
+        if (!Array.isArray(result.data)) throw new Error('Borrowing history could not be read.');
+        collected.push(...result.data.filter(item => desk || String(item.user_id) === String(user.user_id)));
+        if (result.has_more === false || (result.has_more !== true && result.data.length < 50)) break;
+        if (!result.data.length) throw new Error('The server returned incomplete borrowing history.');
+      }
+      const changed = JSON.stringify(rows) !== JSON.stringify(collected);
+      rows = collected;
+      if (!background || changed) {
+        render();
+      }
+      if (!background && $('feedback').dataset.loadError === 'true') { $('feedback').hidden = true; delete $('feedback').dataset.loadError; }
+    } catch(error) {
+      if (!background) { notify('Could not refresh borrowing history. ' + error.message,true); $('feedback').dataset.loadError = 'true'; }
+    } finally {
+      loading = false;
+      if (!background) { busy = false; $('requestList').setAttribute('aria-busy','false'); }
+      updateButtons();
+    }
+  }
+
+  async function submitAction(event) {
+    event.preventDefault();
+    if (busy || !actionContext) return;
+    const context = {...actionContext};
+    const condition = $('conditionStatus').value, remarks = $('returnRemarks').value.trim();
+    if (remarks.length > 500 || !['good','damaged','missing','under_repair'].includes(condition)) return;
+    const targets = rows.filter(item => context.ids.includes(item.request_id) && item.status === requiredStatus[context.action]);
+    if (targets.length !== context.ids.length) { $('actionError').textContent = 'The request changed. Close this dialog and refresh before trying again.'; $('actionError').hidden = false; return; }
+    busy = true;
+    $('actionForm').setAttribute('aria-busy','true');
+    $('actionDialog').querySelectorAll('button,input,textarea,select').forEach(el => { el.disabled = true; });
+    $('actionSubmit').textContent = 'Saving…'; updateButtons();
+    let completed = 0; const failures = [];
+    for (const item of targets) {
+      try {
+        if (live) {
+          const id = encodeURIComponent(item.request_id);
+          if (context.action === 'cancel') await api('requests/index.php?id=' + id,{method:'DELETE'});
+          else if (context.action === 'return') await api('returns/index.php',{method:'POST',body:JSON.stringify({request_id:item.request_id,condition_status:condition,remarks})});
+          else await api('requests/index.php',{method:'PUT',body:JSON.stringify(context.action === 'pickup' ? {request_id:item.request_id,action:'pickup'} : {request_id:item.request_id,status:nextStatus[context.action]})});
+        }
+        item.status = nextStatus[context.action];
+        if (context.action === 'pickup') item.picked_up_at = pickupWindow?.min_date || '2026-10-10';
+        if (!live && context.action === 'return') item.note = 'Returned condition: ' + condition.replace('_',' ') + (remarks ? '. ' + remarks : '');
+        completed++;
+      } catch(error) { failures.push('Request #' + item.request_id + ': ' + error.message); }
+    }
+    $('actionForm').setAttribute('aria-busy','false');
+    $('actionDialog').querySelectorAll('button,input,textarea,select').forEach(el => { el.disabled = false; });
+    $('actionDialog').close(); busy = false; render(); restoreFocus();
+    notify(completed + ' of ' + targets.length + ' items ' + (context.action === 'pickup' ? 'marked as borrowed' : 'marked as ' + nextStatus[context.action]) + '.' + (failures.length ? ' ' + failures.join(' ') : '') + (!live ? ' Sample preview only; changes reset on reload.' : ''),failures.length > 0);
+    if (live) { await loadHistory(); restoreFocus(); }
+  }
+
+  function setMenu(open) {
+    if (open === menuOpen) return;
+    menuOpen = open;
+    $('sidebar').classList.toggle('menu-open',open);
+    $('menuBackdrop').classList.toggle('menu-open',open);
+    $('menuToggle').setAttribute('aria-expanded',String(open));
+    $('appShell').inert = open;
+    if (open) $('sidebar').querySelector('a').focus();
+    else $('menuToggle').focus();
+  }
+
+  $('menuToggle').addEventListener('click',() => setMenu(true));
+  $('menuBackdrop').addEventListener('click',() => setMenu(false));
+  $('menuClose').addEventListener('click',() => setMenu(false));
+  document.addEventListener('keydown',event => {
+    if (!menuOpen) return;
+    if (event.key === 'Escape') { event.preventDefault(); setMenu(false); }
+    if (event.key === 'Tab') {
+      const focusable = [...$('sidebar').querySelectorAll('a[href],button:not(:disabled)')].filter(el => !el.hidden);
+      const first = focusable[0], last = focusable[focusable.length-1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
+  matchMedia('(min-width:992px)').addEventListener('change',event => { if(event.matches && menuOpen)setMenu(false); });
+  $('statusTabs').addEventListener('click',event => { const tab = event.target.closest('[role="tab"]'); if(tab)filterRequestsByStatus(tab.dataset.status); });
+  $('statusTabs').addEventListener('keydown',event => {
+    const tab = event.target.closest('[role="tab"]');
+    if (!tab || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+    event.preventDefault();
+    const tabs = [...$('statusTabs').querySelectorAll('[role="tab"]')], index = tabs.indexOf(tab);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : (index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    filterRequestsByStatus(tabs[next].dataset.status);
+    tabs[next].focus();
+    tabs[next].scrollIntoView({block:'nearest',inline:'nearest'});
+  });
+  ['dateFrom','dateTo','requestSearch'].forEach(id => { if($(id))$(id).addEventListener('input',render); });
+  $('filterForm').addEventListener('submit',event => event.preventDefault());
+  $('clearFilters').addEventListener('click',resetFilters);
+  $('requestList').addEventListener('click',event => {
+    if(event.target.closest('[data-reset]')) { resetFilters(); return; }
+    const button = event.target.closest('[data-action]');
+    if (!button || button.disabled)return;
+    const group = visibleGroups.find(g => g.key === button.dataset.group);
+    if (!group)return;
+    if(button.dataset.action === 'details')openDetails(group,button);
+    else openAction(button.dataset.action,group,button.dataset.item,button);
+  });
+  document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click',() => $(button.dataset.close).close()));
+  $('detailsDialog').addEventListener('close',restoreFocus);
+  $('actionDialog').addEventListener('close',restoreFocus);
+  $('actionDialog').addEventListener('cancel',event => { if(busy)event.preventDefault(); });
+  $('actionForm').addEventListener('submit',submitAction);
+  $('conditionStatus').addEventListener('change',() => { $('conditionHint').textContent = $('conditionStatus').value === 'good' ? 'Good equipment becomes available again.' : 'Equipment is held out of circulation until its condition is cleared.'; });
+  $('refresh').addEventListener('click',async () => {
+    if(live)await loadHistory();
+    else { rows=structuredClone(SAMPLE_ROWS);render();notify('Sample transactions restored.'); }
+  });
+
+  async function initialize() {
+    render();
+    const explicitPreview = location.protocol === 'file:' || new URLSearchParams(location.search).get('demo') === '1';
+    if (!explicitPreview) {
+      try {
+        const session = await api('auth/me.php'); user = session.data;
+        if (!['customer','admin','staff'].includes(user?.role))throw new Error('Account role unavailable.');
+        if (desk && user.role === 'customer') { location.replace('my-borrowings.html' + location.search); return; }
+        if (!desk && user.role !== 'customer') { location.replace('requests.html' + location.search); return; }
+        EquipmentSidebar.updateUser($('sidebar'), user, { standalone: true, cartCount: 0, unreadCount: 0 });
+        live = true; rows = []; render();
+        $('previewNote').hidden = true;
+        $('workspaceLabel').textContent = desk ? 'Staff workspace' : 'Customer workspace';
+        $('topAvatar').textContent = $('accountAvatar').textContent;
+        await loadHistory();
+        if (!desk) {
+          try { const cart = await api('cart/index.php'); const items = cart.data?.items || cart.data; if(Array.isArray(items)){$('cartCount').textContent=items.length;$('cartCount').setAttribute('aria-label',items.length+' items in borrowing cart');} } catch { $('cartCount').textContent='—';$('cartCount').setAttribute('aria-label','Cart item count unavailable'); }
+        }
+        const requestId = new URLSearchParams(location.search).get('request');
+        const selected = visibleGroups.find(g=>g.items.some(i=>String(i.request_id)===requestId));
+        if(selected)openDetails(selected,$('request-'+selected.id));
+      } catch(error) {
+        if(live){rows=[];render();notify('Could not load your borrowing history. '+error.message,true);}
+        else if(error.status !== 401)notify('Sample preview is available. Sign in through Equipment Desk to load saved transactions.');
+      }
+    }
+    busy = false; $('requestList').setAttribute('aria-busy','false'); updateButtons();
+    const refresh = () => { if(live && !document.hidden && !busy && !loading)loadHistory(true); };
+    const startPolling = () => { if(live && refreshTimer===null)refreshTimer=setInterval(refresh,15000); };
+    startPolling();
+    window.addEventListener('focus',refresh);
+    document.addEventListener('visibilitychange',refresh);
+    window.addEventListener('pagehide',()=>{clearInterval(refreshTimer);refreshTimer=null;});
+    window.addEventListener('pageshow',()=>{startPolling();refresh();});
+  }
+  initialize();
+})();
+
+  </script>
 </body>
 </html>

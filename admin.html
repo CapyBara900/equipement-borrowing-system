@@ -3,127 +3,283 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>People &amp; categories — Equipment Desk</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="description" content="Manage Equipment Desk accounts, permissions, and equipment categories.">
+<title>People &amp; Categories — Equipment Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="assets/css/styles.css" rel="stylesheet">
+<link href="assets/css/styles.css?v=account-profile-v1" rel="stylesheet">
+<style>
+  /* Scoped to this page so the other Equipment Desk views keep their styles. */
+  .admin-page { --ink: #0f172a; --ink-soft: #334155; --slate: #64748b; --surface: #f8fafc; --line: #e2e8f0; --info: #2563eb; background: #f8fafc; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #0f172a; }
+  .admin-page [hidden] { display: none !important; }
+  .admin-page .icon { width: 20px; height: 20px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .admin-page .main { padding: 30px 40px 56px; max-width: 1640px; margin: 0 auto; }
+  .admin-topline { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 34px; font-size: 12px; color: #64748b; }
+  .admin-breadcrumb { display: flex; align-items: center; gap: 10px; }
+  .admin-breadcrumb .icon { width: 16px; height: 16px; }
+  .admin-breadcrumb span:last-child { color: #334155; }
+  .access-label { display: inline-flex; gap: 7px; align-items: center; color: #475569; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; white-space: nowrap; }
+  .access-label .icon { width: 14px; height: 14px; }
+  .admin-page .page-head { margin-bottom: 29px; }
+  .admin-page h1 { font-size: clamp(26px, 2.5vw, 32px); font-weight: 700; letter-spacing: -1px; margin: 0 0 10px; }
+  .admin-page .page-head p { font-size: 14px; color: #64748b; margin: 0; line-height: 1.7; }
+  .admin-tabs { display: flex; gap: 28px; border-bottom: 1px solid #e2e8f0; margin-bottom: 30px; }
+  .admin-tab { display: flex; align-items: center; gap: 8px; position: relative; background: none; border: 0; padding: 0 0 15px; color: #64748b; font-size: 14px; font-weight: 500; transition: color .18s ease; }
+  .admin-tab .icon { width: 18px; height: 18px; }
+  .admin-tab[aria-selected="true"] { color: #2563eb; }
+  .admin-tab[aria-selected="true"]::after { content: ''; position: absolute; height: 3px; border-radius: 3px 3px 0 0; background: #2563eb; bottom: -1px; left: 0; right: 0; }
+  .tab-count { font-size: 11px; font-weight: 600; background: #e2e8f0; border-radius: 5px; color: #475569; padding: 1px 6px; min-width: 20px; text-align: center; }
+  .admin-tab[aria-selected="true"] .tab-count { background: #dbeafe; color: #1d4ed8; }
+  .admin-tab-panel { animation: panel-in .2s ease; }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .section-heading h2 { font-size: 17px; font-weight: 600; margin: 0 0 5px; letter-spacing: -.3px; }
+  .section-heading p { color: #64748b; font-size: 13px; margin: 0; }
+  .admin-page .panel { border-radius: 8px; border-color: #e2e8f0; box-shadow: 0 2px 4px #0f172a04; }
+  .people-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 20px; }
+  .people-filters { display: flex; gap: 12px; flex: 1 1 400px; max-width: 580px; }
+  .search-field { position: relative; flex: 1 1 auto; min-width: 160px; }
+  .search-field > .icon { position: absolute; left: 13px; top: 12px; width: 17px; height: 17px; color: #94a3b8; pointer-events: none; }
+  .admin-page .form-control, .admin-page .form-select { min-height: 42px; border-color: #e2e8f0; border-radius: 6px; font-size: 13px; color: #334155; }
+  .admin-page .form-control::placeholder { color: #64748b; }
+  .admin-page #userSearch { padding-left: 40px; }
+  .admin-page #roleFilter { flex: 0 0 168px; width: 168px; }
+  .admin-page .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 40px; padding: 9px 15px; font-size: 13px; font-weight: 500; border-radius: 6px; white-space: nowrap; }
+  .admin-page .btn .icon { width: 17px; height: 17px; }
+  .admin-page .btn-primary { --bs-btn-bg: #2563eb; --bs-btn-border-color: #2563eb; --bs-btn-disabled-bg: #2563eb; --bs-btn-disabled-border-color: #2563eb; background: #2563eb; border-color: #2563eb; color: #fff; }
+  .admin-page .btn-primary:hover, .admin-page .btn-primary:focus-visible { background: #1d4ed8; border-color: #1d4ed8; }
+  .admin-page .btn-outline-secondary { background: #fff; color: #334155; border-color: #e2e8f0; }
+  .admin-page .btn-outline-secondary:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+  .admin-page .btn-danger { background: #dc2626; border-color: #dc2626; }
+  .admin-page .table-responsive { border-top: 1px solid #e2e8f0; }
+  .admin-table { min-width: 780px; width: 100%; border-collapse: collapse; margin: 0; }
+  .admin-table thead th { background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+  .admin-table td { padding: 19px 20px; vertical-align: middle; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+  .admin-table tbody tr:last-child td { border-bottom: 0; }
+  .admin-table tbody tr:hover { background: #fafcff; }
+  .admin-table th:first-child { width: 38%; }
+  .admin-table th:last-child, .admin-table td:last-child { text-align: right; }
+  .user-identity { display: flex; align-items: center; gap: 12px; min-width: 200px; }
+  .user-avatar { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; border-radius: 50%; background: #e0e7ff; color: #3730a3; font-size: 12px; font-weight: 600; }
+  .user-avatar.avatar-purple { background: #f3e8ff; color: #6b21a8; }
+  .user-avatar.avatar-teal { background: #ccfbf1; color: #115e59; }
+  .user-avatar.avatar-amber { background: #fef3c7; color: #92400e; }
+  .user-name { font-weight: 600; color: #1e293b; overflow-wrap: anywhere; }
+  .user-email { margin-top: 3px; font-size: 12px; color: #64748b; overflow-wrap: anywhere; }
+  .self-label { color: #64748b; font-size: 11px; font-weight: 400; margin-left: 5px; }
+  .role-badge, .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; line-height: 1.5; font-weight: 500; border-radius: 50px; white-space: nowrap; }
+  .role-admin { background: #e0e7ff; color: #3730a3; }
+  .role-staff { background: #f3e8ff; color: #6b21a8; }
+  .role-customer { background: #f1f5f9; color: #334155; }
+  .status-active { background: #dcfce7; color: #166534; }
+  .status-inactive { background: #fee2e2; color: #991b1b; }
+  .status-badge::before { content: ''; width: 5px; height: 5px; background: currentColor; border-radius: 50%; }
+  .joined-date { color: #64748b; white-space: nowrap; }
+  .account-menu-toggle { width: 34px; height: 34px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #64748b; display: inline-grid; place-items: center; }
+  .account-menu-toggle:hover, .account-menu-toggle[aria-expanded="true"] { background: #f1f5f9; border-color: #e2e8f0; color: #0f172a; }
+  .own-account { color: #64748b; font-size: 11px; white-space: nowrap; }
+  .table-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 15px 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px; }
+  .table-footer p { margin: 0; }
+  .table-footer .icon { width: 14px; height: 14px; }
+  .table-note { display: inline-flex; align-items: center; gap: 6px; }
+  .category-note { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 12px; padding: 13px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 20px; }
+  .category-note .icon { width: 16px; height: 16px; }
+  .category-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .category-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0; box-shadow: 0 2px 4px #0f172a03; }
+  .category-card-header { display: flex; gap: 12px; align-items: center; }
+  .category-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; background: #eff6ff; color: #2563eb; border-radius: 8px; }
+  .category-icon svg { width: 23px; height: 23px; }
+  .category-card h3 { font-size: 14px; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
+  .category-description { font-size: 13px; color: #64748b; line-height: 1.7; margin: 0; overflow-wrap: anywhere; flex: 1; }
+  .equipment-count { display: inline-flex; align-self: flex-start; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 11px; font-weight: 500; padding: 4px 9px; border-radius: 5px; }
+  .category-card-actions { border-top: 1px solid #f1f5f9; padding-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .admin-page .category-card-actions .btn { min-height: 34px; font-size: 11px; padding: 7px 10px; }
+  .admin-page .category-delete { background: #fef2f2; color: #b91c1c; border-color: #fee2e2; }
+  .admin-page .category-delete:hover { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+  .category-grid > .empty { grid-column: 1 / -1; background: #fff; }
+  .account-action-menu { position: fixed; z-index: 1040; width: 208px; padding: 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; box-shadow: 0 8px 28px #0f172a1f; }
+  .account-action-menu button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: transparent; color: #334155; font-size: 12px; border-radius: 5px; padding: 10px; text-align: left; }
+  .account-action-menu button:hover, .account-action-menu button:focus-visible { background: #f1f5f9; }
+  .account-action-menu .danger-action { color: #b91c1c; border-top: 1px solid #f1f5f9; border-radius: 0 0 5px 5px; margin-top: 4px; }
+  .admin-page .modal-content { border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 24px 60px #0f172a26; }
+  .admin-page .modal-header { padding: 24px 24px 16px; border-bottom: 0; }
+  .admin-page .modal-title { font-size: 19px; font-weight: 600; letter-spacing: -.5px; }
+  .admin-page .modal-body { padding: 8px 24px 24px; }
+  .admin-page .modal-footer { padding: 16px 24px; background: #f8fafc; border-top-color: #e2e8f0; border-radius: 0 0 12px 12px; }
+  .admin-page .form-label { font-size: 12px; font-weight: 600; margin-bottom: 7px; }
+  .admin-page .form-text { font-size: 12px; color: #64748b; line-height: 1.65; }
+  .modal-intro { color: #64748b; font-size: 13px; margin: 0 0 22px; }
+  .modal-account { font-size: 13px; color: #334155; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 20px; overflow-wrap: anywhere; }
+  .password-field { position: relative; }
+  .password-field .form-control { padding-right: 46px; }
+  .password-toggle { position: absolute; right: 5px; top: 4px; width: 34px; height: 34px; border: 0; border-radius: 4px; background: transparent; color: #64748b; }
+  .password-toggle:hover { background: #f1f5f9; }
+  .admin-page .field-error { font-size: 12px; }
+  .admin-page .empty { padding: 40px 20px; font-size: 13px; }
+  .admin-page .empty strong { font-weight: 600; font-size: 15px; }
+  .admin-page #toastZone { max-width: calc(100vw - 32px); }
+  .admin-page .toast-msg { background: #0f172a; border-radius: 8px; box-shadow: 0 4px 20px #0f172a26; font-size: 13px; }
+  .skip-link { position: fixed; top: -60px; left: 12px; background: #fff; padding: 10px 16px; border-radius: 6px; z-index: 1100; }
+  .skip-link:focus { top: 12px; }
+  @media (min-width: 992px) { .admin-page .topbar { display: none; } }
+  @media (max-width: 1250px) { .admin-page .main { padding: 28px; } .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 991.98px) { .admin-page .rail { display: none; } .admin-page .topbar { background: #0f172a; } .admin-page .main { padding: 24px; } .admin-topline { margin-bottom: 26px; } }
+  @media (max-width: 650px) { .admin-page .main { padding: 24px 16px 40px; } .admin-topline { margin-bottom: 24px; } .access-label { display: none; } .admin-page .page-head { margin-bottom: 24px; } .people-toolbar { padding: 16px; gap: 12px; } .people-filters { flex-basis: 100%; max-width: none; flex-wrap: wrap; gap: 10px; } .search-field { flex-basis: 100%; } .admin-page #roleFilter { flex: 1; width: auto; } .people-toolbar > .btn { width: 100%; } .category-grid { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; } .category-note { align-items: flex-start; line-height: 1.6; } .category-note .icon { margin-top: 2px; } .table-note { display: none; } .category-card { padding: 20px; } .admin-tabs { margin-bottom: 24px; } }
+  @media (prefers-reduced-motion: reduce) { .admin-tab-panel { animation: none; } .admin-tab { transition: none; } }
+</style>
+<link href="assets/css/sidebar.css?v=sidebar-v3" rel="stylesheet">
 </head>
-<body>
-
+<body class="admin-page">
+<a class="skip-link" href="#mainContent">Skip to main content</a>
+<!-- Local SVG icons: no icon library or image request required. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <symbol id="icon-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></symbol>
+    <symbol id="icon-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M20 8v6M17 11h6"/><circle cx="9" cy="7" r="4"/></symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="icon-box" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9M7.5 5.5l9 5"/></symbol>
+    <symbol id="icon-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6M9 15h6"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3ZM9 12l2 2 4-4"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="icon-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24"><path d="m16 3 5 5-12 12-6 1 1-6L16 3ZM14 5l5 5"/></symbol>
+    <symbol id="icon-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="5"/><path d="m12 12 9 9M17 17l3-3M14 14l3-3"/></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></symbol>
+    <symbol id="icon-unlock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  </defs>
+</svg>
 <header class="topbar">
   <span class="brand">Equipment Desk</span>
-  <button class="btn btn-sm btn-outline-light" type="button"
-          data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Open menu">Menu</button>
+  <button class="btn btn-sm btn-outline-light" type="button" data-sidebar-open="#mobileNav" aria-controls="mobileNav" aria-label="Open navigation menu">Menu</button>
 </header>
-
-<div class="offcanvas offcanvas-start rail-canvas" tabindex="-1" id="mobileNav">
-  <div class="offcanvas-body p-0"></div>
+<div class="rail-canvas sidebar-drawer" tabindex="-1" id="mobileNav" role="dialog" aria-modal="true" aria-label="Main navigation" hidden>
+  <div class="offcanvas-body sidebar"></div>
 </div>
-
 <div class="app-shell">
-  <aside class="rail"></aside>
-
-  <main class="main">
-    <div class="page-head">
-      <div>
-        <h1>People &amp; categories</h1>
-        <p>Who can use the system, and how equipment is grouped.</p>
-      </div>
+  <aside class="rail sidebar" aria-label="Main navigation"></aside>
+  <main class="main" id="mainContent" tabindex="-1">
+    <div class="admin-topline">
+      <div class="admin-breadcrumb"><svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg><span>Administration</span><span aria-hidden="true">/</span><span>People &amp; Categories</span></div>
+      <span class="access-label"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg>Administrator access</span>
     </div>
-
-    <ul class="nav nav-tabs mb-3" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#peopleTab" type="button" role="tab">People</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#categoryTab" type="button" role="tab">Categories</button>
-      </li>
-    </ul>
-
-    <div class="tab-content">
-
-      <!-- People -->
-      <div class="tab-pane fade show active" id="peopleTab" role="tabpanel">
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Accounts</h2>
-            <button class="btn btn-primary btn-sm" id="addUserBtn">Add staff or admin</button>
-          </div>
-          <div class="table-responsive">
-            <table class="table">
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
-              <tbody id="userRows"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Categories -->
-      <div class="tab-pane fade" id="categoryTab" role="tabpanel">
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Categories</h2>
-            <button class="btn btn-primary btn-sm" id="addCategoryBtn">Add Category</button>
-          </div>
-          <p class="form-text px-3">Reassign equipment before deleting its category.</p>
-          <div class="panel-body" id="categoryList" aria-live="polite"></div>
-        </div>
-      </div>
-
+    <div class="page-head"><div><h1>People &amp; Categories</h1><p>Manage system accounts, user permissions, and equipment categorization.</p></div></div>
+    <div class="admin-tabs" role="tablist" aria-label="Administration sections">
+      <button class="admin-tab" id="peopleTabButton" data-admin-tab="people" role="tab" type="button" aria-controls="peopleTab" aria-selected="true" tabindex="0"><svg class="icon" aria-hidden="true"><use href="#icon-users"/></svg>People<span class="tab-count" id="peopleCount" aria-label="Total accounts">—</span></button>
+      <button class="admin-tab" id="categoryTabButton" data-admin-tab="categories" role="tab" type="button" aria-controls="categoryTab" aria-selected="false" tabindex="-1"><svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg>Categories<span class="tab-count" id="categoryCount" aria-label="Total categories">—</span></button>
     </div>
+    <section class="admin-tab-panel" id="peopleTab" role="tabpanel" aria-labelledby="peopleTabButton" tabindex="0">
+      <div class="section-heading"><div><h2>System accounts</h2><p>Manage access and permissions for everyone on your team.</p></div></div>
+      <div class="panel">
+        <div class="people-toolbar">
+          <div class="people-filters">
+            <div class="search-field"><label class="visually-hidden" for="userSearch">Search by name or email</label><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg><input class="form-control" type="search" id="userSearch" placeholder="Search by name or email..." autocomplete="off" aria-controls="userRows"></div>
+            <label class="visually-hidden" for="roleFilter">Filter accounts by role</label>
+            <select class="form-select" id="roleFilter" aria-controls="userRows"><option value="">All Roles</option><option value="admin">Administrator</option><option value="staff">Staff</option><option value="customer">Customer</option></select>
+          </div>
+          <button class="btn btn-primary" id="addUserBtn" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-user-plus"/></svg>+ Add Staff or Admin</button>
+        </div>
+        <div class="table-responsive" role="region" aria-label="System accounts table; scroll horizontally on small screens" tabindex="0">
+          <table class="admin-table"><caption class="visually-hidden">System accounts, current roles, date joined, account status, and management actions.</caption><thead><tr><th scope="col">User Info</th><th scope="col">Current Role</th><th scope="col">Date Joined</th><th scope="col">Account Status</th><th scope="col">Actions</th></tr></thead><tbody id="userRows" aria-busy="true"><tr><td colspan="5"><div class="empty"><strong>Loading accounts…</strong>Fetching the latest account information.</div></td></tr></tbody></table>
+        </div>
+        <div class="table-footer"><p id="userResults" role="status" aria-live="polite" aria-atomic="true">Loading accounts…</p><span class="table-note"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg>Your own account is protected.</span></div>
+      </div>
+    </section>
+    <section class="admin-tab-panel" id="categoryTab" role="tabpanel" aria-labelledby="categoryTabButton" tabindex="0" hidden>
+      <div class="section-heading"><div><h2>Equipment categories</h2><p>Keep your inventory organized and easy to find.</p></div><button class="btn btn-primary" id="addCategoryBtn" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-plus"/></svg>+ Add Category</button></div>
+      <div class="category-note"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg><span>Reassign or unlink equipment before deleting a category.</span></div>
+      <div class="category-grid is-loading" id="categoryList" data-layout="cards" aria-live="polite" aria-busy="true"><div class="empty"><strong>Loading categories…</strong>Fetching equipment groups and assigned item counts.</div></div>
+    </section>
   </main>
 </div>
-
-<!-- User modal -->
-<div class="modal fade" id="userModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title h5">Add an account</h2>
-        <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form id="userForm" novalidate>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label" for="userName">Full name</label>
-            <input class="form-control" type="text" id="userName" required>
-            <div class="field-error" data-error-for="userName"></div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="userEmail">Email</label>
-            <input class="form-control" type="email" id="userEmail" required>
-            <div class="field-error" data-error-for="userEmail"></div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="userPassword">Temporary password</label>
-            <input class="form-control" type="password" id="userPassword" autocomplete="new-password" required>
-            <div class="field-error" data-error-for="userPassword"></div>
-            <div class="form-text" style="font-size:.8rem">At least 12 characters with uppercase, lowercase, number, and special character. No spaces or personal information.</div>
-          </div>
-          <div class="mb-1">
-            <label class="form-label" for="userRole">Role</label>
-            <select class="form-select" id="userRole">
-              <option value="staff">Staff — processes requests and returns</option>
-              <option value="admin">Administrator — full access</option>
-              <option value="customer">Customer — borrows equipment</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit" id="userSubmit" disabled>Create account</button>
-        </div>
-      </form>
-    </div>
-  </div>
+<!-- The menu lives outside the scrolling table so it cannot be clipped. -->
+<div class="account-action-menu" id="accountActionMenu" role="menu" aria-label="Account actions" hidden>
+  <button type="button" role="menuitem" tabindex="-1" data-account-action="edit"><svg class="icon" aria-hidden="true"><use href="#icon-edit"/></svg>Edit Role</button>
+  <button type="button" role="menuitem" tabindex="-1" data-account-action="reset"><svg class="icon" aria-hidden="true"><use href="#icon-key"/></svg>Reset Password</button>
+  <button type="button" role="menuitem" tabindex="-1" data-account-action="unlock" hidden><svg class="icon" aria-hidden="true"><use href="#icon-unlock"/></svg>Restore Access</button>
+  <button class="danger-action" type="button" role="menuitem" tabindex="-1" data-account-action="remove"><svg class="icon" aria-hidden="true"><use href="#icon-trash"/></svg>Remove Account</button>
 </div>
-
-<div id="toastZone"></div>
-
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalTitle">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="modal-title" id="userModalTitle">Add Staff or Admin</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close add account dialog"></button></div>
+    <form id="userForm" novalidate><div class="modal-body">
+      <p class="modal-intro">Create a team account and choose its level of access.</p>
+      <div class="mb-3"><label class="form-label" for="userName">Full name</label><input class="form-control" type="text" id="userName" maxlength="100" autocomplete="name" placeholder="e.g. Darrelle Soriano" aria-describedby="userNameError" required><div class="field-error" id="userNameError" data-error-for="userName"></div></div>
+      <div class="mb-3"><label class="form-label" for="userEmail">Email address</label><input class="form-control" type="email" id="userEmail" maxlength="254" autocomplete="email" placeholder="name@example.com" aria-describedby="userEmailError" required><div class="field-error" id="userEmailError" data-error-for="userEmail"></div></div>
+      <div class="mb-3"><label class="form-label" for="userPassword">Temporary password</label><div class="password-field"><input class="form-control" type="password" id="userPassword" autocomplete="new-password" aria-describedby="userPasswordHint userPasswordError" required><button class="password-toggle" type="button" data-password-toggle="userPassword" aria-label="Show temporary password" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#icon-eye"/></svg></button></div><div class="field-error" id="userPasswordError" data-error-for="userPassword"></div><div class="form-text" id="userPasswordHint">Use 12 or more characters with uppercase, lowercase, a number, and a special character (!@#$%^&amp;*). No spaces or personal information.</div></div>
+      <div><label class="form-label" for="userRole">Account role</label><select class="form-select" id="userRole"><option value="staff">Staff — manage borrowing and returns</option><option value="admin">Administrator — full system access</option></select><p class="form-text mb-0">Customers create their accounts through the registration page.</p></div>
+    </div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit" id="userSubmit" disabled>Create account</button></div></form>
+  </div></div>
+</div>
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryTitle">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="modal-title" id="categoryTitle">Add Category</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close category dialog"></button></div>
+    <form id="categoryForm" novalidate><div class="modal-body">
+      <input type="hidden" id="categoryId"><p class="modal-intro">Group related equipment under a clear, descriptive name.</p>
+      <div class="mb-3"><label class="form-label" for="categoryName">Category name</label><input class="form-control" type="text" id="categoryName" maxlength="100" placeholder="e.g. Audio / Visual" aria-describedby="categoryNameHint categoryNameError" required><div class="field-error" id="categoryNameError" data-error-for="categoryName"></div><div class="form-text" id="categoryNameHint">Names must be unique, regardless of capitalization or extra spaces.</div></div>
+      <div><label class="form-label" for="categoryDescription">Description <span class="text-secondary fw-normal">(optional)</span></label><textarea class="form-control" id="categoryDescription" rows="3" maxlength="500" placeholder="Describe the equipment included in this category..." aria-describedby="categoryDescriptionHint categoryDescriptionError"></textarea><div class="field-error" id="categoryDescriptionError" data-error-for="categoryDescription"></div><div class="form-text" id="categoryDescriptionHint">Up to 500 characters.</div></div>
+    </div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit" id="categorySubmit" disabled>Save</button></div></form>
+  </div></div>
+</div>
+<div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalTitle">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="modal-title" id="roleModalTitle">Edit account role</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close role dialog"></button></div>
+    <form id="roleForm"><div class="modal-body"><p class="modal-intro">Choose the permissions this account needs.</p><div class="modal-account" id="roleAccountLabel"></div><label class="form-label" for="editUserRole">Current role</label><select class="form-select" id="editUserRole"><option value="admin">Administrator</option><option value="staff">Staff</option><option value="customer">Customer</option></select><p class="form-text mb-0" id="roleDescription">Administrators can manage equipment, accounts, categories, and borrowing.</p></div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit" id="roleSubmit">Save role</button></div></form>
+  </div></div>
+</div>
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetModalTitle">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="modal-title" id="resetModalTitle">Reset password</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close password reset dialog"></button></div>
+    <form id="resetForm" novalidate><div class="modal-body">
+      <p class="modal-intro">Set a new password for this account. Share it directly with the account owner.</p><div class="modal-account" id="resetAccountLabel"></div><input type="hidden" id="resetAccountName"><input type="hidden" id="resetAccountEmail">
+      <div class="mb-3"><label class="form-label" for="resetPassword">New password</label><div class="password-field"><input class="form-control" type="password" id="resetPassword" autocomplete="new-password" aria-describedby="resetPasswordHint resetPasswordError" required><button class="password-toggle" type="button" data-password-toggle="resetPassword" aria-label="Show new password" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#icon-eye"/></svg></button></div><div class="field-error" id="resetPasswordError" data-error-for="resetPassword"></div><div class="form-text" id="resetPasswordHint">Use 12 or more characters with uppercase, lowercase, a number, and a special character (!@#$%^&amp;*). No spaces or personal information.</div></div>
+      <div><label class="form-label" for="resetConfirmPassword">Confirm new password</label><input class="form-control" type="password" id="resetConfirmPassword" autocomplete="new-password" aria-describedby="resetConfirmPasswordError" required><div class="field-error" id="resetConfirmPasswordError" data-error-for="resetConfirmPassword"></div></div>
+    </div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit" id="resetSubmit" disabled>Reset password</button></div></form>
+  </div></div>
+</div>
+<div class="modal fade" id="accountConfirmModal" tabindex="-1" aria-labelledby="accountConfirmTitle">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="accountConfirmTitle">Remove account?</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close confirmation"></button></div><div class="modal-body"><p id="accountConfirmMessage" class="modal-intro mb-0"></p></div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-danger" type="button" id="accountConfirmBtn">Remove account</button></div></div></div>
+</div>
+<div id="toastZone" aria-live="polite" aria-atomic="false"></div>
+<noscript><div class="alert alert-warning m-3">Enable JavaScript to manage accounts and categories.</div></noscript>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/api.js?v=dated-cart-v2"></script>
-<script src="assets/js/app.js?v=staff-navigation-v3"></script>
-<script src="assets/js/categories.js?v=category-management-v1"></script>
-<script src="assets/js/admin.js?v=category-management-v1"></script>
+<script src="assets/js/api.js?v=people-categories-v2"></script>
+<script src="assets/js/sidebar.js?v=sidebar-v3"></script>
+<script src="assets/js/app.js?v=sidebar-v1"></script>
+<script src="assets/js/categories.js?v=people-categories-v2"></script>
+<script src="assets/js/admin.js?v=people-categories-v2"></script>
+<script>
+  // Accessible tabs, instant combined filters, and add-account modal trigger.
+  (() => {
+    const tabs = Array.from(document.querySelectorAll('[data-admin-tab]'));
+    function selectTab(selected, focus = false) {
+      closeUserMenu();
+      tabs.forEach(tab => {
+        const active = tab === selected;
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        document.getElementById(tab.getAttribute('aria-controls')).hidden = !active;
+      });
+      if (focus) selected.focus();
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectTab(tab));
+      tab.addEventListener('keydown', event => {
+        let next;
+        if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+        if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = tabs.length - 1;
+        if (next !== undefined) { event.preventDefault(); selectTab(tabs[next], true); }
+      });
+    });
+    document.getElementById('userSearch').addEventListener('input', () => renderUsers());
+    document.getElementById('roleFilter').addEventListener('change', () => renderUsers());
+    document.getElementById('addUserBtn').addEventListener('click', () => openUserModal());
+    // Add Category and its validated modal are wired by the shared CategoryManager.
+  })();
+</script>
 </body>
 </html>

@@ -10,86 +10,65 @@ requirePageRole(['admin', 'customer']);
 <title>Equipment — Equipment Desk</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="assets/css/styles.css" rel="stylesheet">
+<link href="assets/css/styles.css?v=account-profile-v1" rel="stylesheet">
+<link href="assets/css/catalog.css?v=catalog-ui-v1" rel="stylesheet">
+<link href="assets/css/sidebar.css?v=sidebar-v3" rel="stylesheet">
 </head>
-<body>
+<body class="catalog-page">
 
 <header class="topbar">
   <span class="brand">Equipment Desk</span>
   <button class="btn btn-sm btn-outline-light" type="button"
-          data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Open menu">Menu</button>
+          data-sidebar-open="#mobileNav" aria-label="Open menu">Menu</button>
 </header>
 
-<div class="offcanvas offcanvas-start rail-canvas" tabindex="-1" id="mobileNav">
-  <div class="offcanvas-body p-0"></div>
+<div class="rail-canvas sidebar-drawer" tabindex="-1" id="mobileNav" role="dialog" aria-modal="true" aria-label="Main navigation" hidden>
+  <div class="offcanvas-body sidebar"></div>
 </div>
 
 <div class="app-shell">
-  <aside class="rail"></aside>
+  <aside class="rail sidebar" aria-label="Main navigation"></aside>
 
   <main class="main">
-    <div class="page-head">
+    <div class="page-head catalog-page-head">
       <div>
-        <h1>Equipment</h1>
-        <p>Find something and request it. The stripe on each row shows whether it's free.</p>
+        <span class="catalog-eyebrow">EQUIPMENT DESK</span>
+        <h1 id="catalogTitle">Equipment catalog</h1>
+        <p id="catalogSubtitle">Find the right equipment for your next project.</p>
       </div>
-      <div class="d-flex flex-wrap gap-2">
-        <button class="btn btn-outline-secondary btn-sm" id="manageCategoriesBtn" hidden>Manage categories</button>
+      <div class="catalog-admin-toolbar" aria-label="Equipment management actions">
+        <button class="btn btn-outline-secondary btn-sm" id="manageCategoriesBtn" aria-controls="categoryManagement" aria-expanded="false" hidden>Manage categories</button>
         <button class="btn btn-outline-primary btn-sm" id="addCategoryBtn" hidden>Add Category</button>
         <button class="btn btn-primary btn-sm" id="addEquipmentBtn" hidden>Add equipment</button>
       </div>
     </div>
 
-    <details class="panel mb-3" id="categoryManagement" hidden>
+    <details class="panel catalog-categories" id="categoryManagement" hidden>
       <summary class="panel-head"><h2 class="d-inline">Equipment categories</h2></summary>
       <p class="form-text px-3">Edit names and descriptions here. Reassign equipment before deleting its category.</p>
       <div class="panel-body" id="categoryList" aria-live="polite"></div>
     </details>
 
-    <!-- Search / filter / sort -->
-    <div class="panel mb-3">
-      <div class="panel-body">
-        <div class="row g-2">
-          <div class="col-12 col-lg-4">
-            <label class="form-label" for="searchInput">Search</label>
-            <input class="form-control" type="search" id="searchInput"
-                   placeholder="Name, description, or serial number">
-          </div>
-          <div class="col-6 col-lg-3">
-            <label class="form-label" for="categoryFilter">Category</label>
-            <select class="form-select" id="categoryFilter"><option value="">All categories</option></select>
-          </div>
-          <div class="col-6 col-lg-2">
-            <label class="form-label" for="statusFilter">Status</label>
-            <select class="form-select" id="statusFilter">
-              <option value="">Any</option>
-              <option value="available">Available</option>
-              <option value="unavailable">Unavailable</option>
-              <option value="pending">Pending</option>
-              <option value="borrowed">Borrowed</option>
-              <option value="maintenance">Repair</option>
-            </select>
-          </div>
-          <div class="col-8 col-lg-2">
-            <label class="form-label" for="sortBy">Sort by</label>
-            <select class="form-select" id="sortBy">
-              <option value="equipment_name">Name</option>
-              <option value="status">Status</option>
-              <option value="created_at">Newest</option>
-            </select>
-          </div>
-          <div class="col-4 col-lg-1 d-flex align-items-end">
-            <button class="btn btn-outline-secondary w-100" id="sortDirBtn"
-                    title="Toggle sort direction" aria-label="Toggle sort direction">A–Z</button>
-          </div>
+    <section class="panel catalog-controls" aria-label="Search and filter equipment">
+      <div class="catalog-search-row">
+        <div class="catalog-search-field"><label for="searchInput">Search equipment</label><input type="search" id="searchInput" class="form-control" placeholder="Name, description, or serial number" autocomplete="off" aria-controls="equipmentList"></div>
+        <div class="catalog-view-switch" role="group" aria-label="Equipment layout">
+          <button type="button" id="gridViewBtn" class="catalog-view-button" data-catalog-view="grid" aria-pressed="true" aria-controls="equipmentList" title="Grid cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Grid</button>
+          <button type="button" id="listViewBtn" class="catalog-view-button" data-catalog-view="list" aria-pressed="false" aria-controls="equipmentList" title="Data table list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 5h12M9 12h12M9 19h12M3 5h2M3 12h2M3 19h2"/></svg>List</button>
         </div>
       </div>
-    </div>
+      <div class="catalog-filter-row">
+        <div><label for="categoryFilter">Category</label><select class="form-select" id="categoryFilter"><option value="">All categories</option></select></div>
+        <div><label for="statusFilter">Status</label><select class="form-select" id="statusFilter"><option value="">Any availability</option><option value="available">Available</option><option value="unavailable">Unavailable</option><option value="pending">Reserved / pending</option><option value="borrowed">On loan</option><option value="maintenance">Maintenance</option></select></div>
+        <div><label for="sortBy">Sort by</label><div class="catalog-sort-control"><select class="form-select" id="sortBy"><option value="equipment_name">Name</option><option value="created_at">Date added</option><option value="available_quantity">Available stock</option><option value="status">Status</option></select><button class="catalog-icon-button" type="button" id="sortDirBtn" title="Toggle sort direction" aria-label="Sort ascending; switch to descending">A–Z</button></div></div>
+        <button class="catalog-clear" type="button" id="clearCatalogFilters">Clear filters</button>
+      </div>
+    </section>
 
-    <div id="resultMeta" class="mb-2" style="font-size:.85rem;color:var(--slate)"></div>
-    <div id="equipmentList"><div class="empty">Loading equipment…</div></div>
+    <div class="catalog-results-heading"><p id="resultMeta" role="status" aria-live="polite" aria-atomic="true">Loading equipment…</p><span>Click an item for a quick view</span></div>
+    <div id="equipmentList" aria-busy="true"><div class="empty">Loading equipment…</div></div>
 
-    <nav class="d-flex justify-content-between align-items-center mt-3" id="pager" hidden>
+    <nav class="catalog-pagination" aria-label="Equipment pages" id="pager" hidden>
       <button class="btn btn-outline-secondary btn-sm" id="prevPage">Previous</button>
       <span style="font-size:.88rem;color:var(--slate)" id="pageLabel"></span>
       <button class="btn btn-outline-secondary btn-sm" id="nextPage">Next</button>
@@ -212,12 +191,18 @@ requirePageRole(['admin', 'customer']);
   </div>
 </div>
 
+<dialog id="equipmentQuickView" class="catalog-dialog" aria-labelledby="quickViewTitle">
+  <header class="catalog-dialog-header"><h2 id="quickViewTitle">Equipment details</h2><form method="dialog"><button type="submit" class="catalog-dialog-close" aria-label="Close equipment details">×</button></form></header>
+  <div id="quickViewBody" aria-busy="false"></div>
+</dialog>
+
 <div id="toastZone"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/api.js?v=dated-cart-v2"></script>
-<script src="assets/js/app.js?v=staff-navigation-v3"></script>
+<script src="assets/js/api.js?v=catalog-ui-v1"></script>
+<script src="assets/js/sidebar.js?v=sidebar-v3"></script>
+<script src="assets/js/app.js?v=sidebar-v1"></script>
 <script src="assets/js/categories.js?v=category-management-v1"></script>
-<script src="assets/js/equipment.js?v=category-management-v1"></script>
+<script src="assets/js/equipment.js?v=catalog-ui-v1"></script>
 </body>
 </html>

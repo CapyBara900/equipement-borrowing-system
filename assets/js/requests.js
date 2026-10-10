@@ -29,8 +29,21 @@ const transactionReference = transaction => 'Request #' + transaction.items[0].r
   wireFilters();
   if (desk) wireReturnForm();
   await load();
+  openDashboardBorrowing();
   if (!desk) wireCustomerRefresh();
 })();
+
+// Dashboard links select only a transaction already returned by the authorized history API.
+function openDashboardBorrowing() {
+  if (!window.location?.search) return;
+  const id = new URLSearchParams(window.location.search).get('request');
+  if (!id || !/^\d+$/.test(id) || borrowingRows === null) return;
+  const index = transactions.findIndex(transaction => String(transaction.items[0].request_id) === id);
+  if (index < 0) return;
+  page = Math.floor(index / PAGE_SIZE) + 1;
+  renderBorrowings();
+  showBorrowingDetails(transactions[index].key);
+}
 
 function wireCustomerRefresh() {
   const refresh = () => load(true, true);

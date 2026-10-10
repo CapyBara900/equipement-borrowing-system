@@ -30,9 +30,9 @@ await run('openBorrow(10,"Camera",3,5,"cart")');element('borrowQuantity').value=
 await run('openBorrow(10,"Camera",3,5)');await element('borrowForm').listeners.submit({preventDefault(){}});assert.equal(direct.length,1,'Direct request remains functional');
 const source=fs.readFileSync(path.join(root,'assets/js/cart.js'),'utf8');run(source.slice(0,source.indexOf('(async function initCart()')));await run('refreshCart()');run('selected=new Set(["101","102"]);checkoutAvailable=true');assert.match(run('selectionError()'),/combined/);assert.equal(run('chosen().length'),2,'Selection retains two entries of same equipment');
 run('selected=new Set(["101"]);');assert.equal(run('validSelection()'),true);
-assert.match(element('cartItems').innerHTML,/data-modify="101"[^>]*>Modify/);
-assert.match(element('cartItems').innerHTML,/data-modify="102"[^>]*>Modify/);
-assert.doesNotMatch(element('cartItems').innerHTML,/name="(quantity|borrow_date|expected_return_date)"/,'Fields must be hidden until Modify');
+assert.match(element('cartItems').innerHTML,/data-modify="101"[^>]*>Edit dates/);
+assert.match(element('cartItems').innerHTML,/data-modify="102"[^>]*>Edit dates/);
+assert.doesNotMatch(element('cartItems').innerHTML,/name="(borrow_date|expected_return_date)"/,'Date inputs remain in the editor');
 await run('openModifier("101")');
 assert.match(element('modifyBody').innerHTML,/name="quantity"[^>]*value="2"/);
 assert.match(element('modifyBody').innerHTML,/name="borrow_date"[^>]*value="2026-10-08"/);
@@ -78,5 +78,47 @@ await run('saveEntry({target:form,preventDefault(){}})');assert.equal(run('effec
 await run('openModifier(previousEditorKey)');fields.quantity.value='2';run('validateEditor(form)');run('discardEditor({preventDefault(){}})');assert.equal(run('effective(previousRows[0],true).quantity'),1,'Cancel restores previously staged import details');assert.equal(storage.get('equipment-desk:cart:v1:1'),persistedBrowser,'Cancel cannot mutate original browser cart');
 // An old checkbox can briefly remain in the DOM after another session removes an entry.
 context.document.querySelectorAll=selector=>selector==='[data-select]'?[{dataset:{select:'deleted-entry'},disabled:false}]:[];run('updateSummary()');
-console.log('PASS: required shared modal details, quantity/date limits, separate dated entries, customer isolation, direct request compatibility, Modify modal saving/cancellation, aggregate stock/preflight, preserved failed carts, durable retries, entry-specific acknowledgments, and browser import safety.');
+// Redesigned cart: inline quantities must persist before checkout and summary counts follow selection.
+context.item.available_quantity=3;context.item.borrowing_time_limit_days=7;
+serverRows=[{...context.item,cart_item_id:201,quantity:1,borrow_date:'2026-10-08',expected_return_date:'2026-10-10'},
+  {...context.item,cart_item_id:202,quantity:1,borrow_date:'2026-10-09',expected_return_date:'2026-10-10'},
+  {...context.item,cart_item_id:203,quantity:1,borrow_date:null,expected_return_date:null}];
+await run('refreshCart()');run('selected.clear();updateSummary()');
+assert.equal(element('checkoutBtn').disabled,true,'Zero selected entries must disable checkout');
+assert.equal(element('totalItems').textContent,0);assert.equal(element('totalQuantity').textContent,0);
+run('selected=new Set(cartRows.filter(eligible).map(rowKey));renderCart()');
+assert.equal(run('selected.size'),2,'Select all includes only eligible entries');assert.equal(element('selectAll').checked,true);
+assert.equal(element('totalItems').textContent,2);assert.equal(element('totalQuantity').textContent,2);assert.equal(element('checkoutBtn').disabled,false);
+assert.match(element('cartItems').innerHTML,/data-quantity="201"/);assert.match(element('cartItems').innerHTML,/Available: 3/);
+assert.equal(element('pickupDate').min,'2026-10-08');assert.equal(element('pickupDate').max,'2026-10-15');
+const inline=element('inlineQuantity');inline.dataset={quantity:'201'};inline.value='2';context.inline=inline;
+run('stageQuantity(inline)');assert.equal(element('totalQuantity').textContent,3,'Typed quantity immediately updates the summary');
+assert.equal(element('checkoutBtn').disabled,true,'Unsaved inline changes block checkout');
+await run('saveQuantity("201",inline.value)');assert.equal(serverRows[0].quantity,2);assert.equal(serverRows[0].borrow_date,'2026-10-08');
+assert.equal(element('checkoutBtn').disabled,false,'Successful quantity save restores checkout');
+inline.value='0';run('stageQuantity(inline)');const beforeInvalid=updates.length;
+await run('saveQuantity("201",inline.value)');assert.equal(updates.length,beforeInvalid,'Invalid quantities cannot save');assert.equal(element('checkoutBtn').disabled,true);
+inline.value='2';run('stageQuantity(inline)');assert.equal(element('checkoutBtn').disabled,false);
+await run('saveQuantity("201","3")');assert.equal(element('checkoutBtn').disabled,true,'Combined stock across dated entries still applies');
+run('selected.delete("202");updateSummary()');assert.equal(element('checkoutBtn').disabled,false);assert.equal(element('selectAll').indeterminate,true);
+await run('saveQuantity("201","1")');run('selected.add("202");updateSummary()');
+// Failed saves restore the persisted quantity without enabling unsafe drafts.
+context.Api.updateCartItem=async()=>{throw Error('Save failed');};await run('saveQuantity("201","2")');assert.equal(run('cartRows[0].quantity'),1);assert.equal(run('drafts.has("201")'),false);assert.match(element('cartMessage').textContent,/Save failed/);context.Api.updateCartItem=updateApi;
+// A newly chosen pickup date must be applied or discarded before checkout.
+element('pickupDate').value='2026-10-11';run('pickupDirty=true;updateSummary()');assert.equal(element('checkoutBtn').disabled,true);assert.match(run('selectionError()'),/pickup date/);run('pickupDirty=false;updateSummary()');assert.equal(element('checkoutBtn').disabled,false);
+// Applying one pickup date keeps each independent borrowing duration.
+element('pickupDate').value='2026-10-11';await run('applySelectedPickup()');
+assert.equal(serverRows[0].borrow_date,'2026-10-11');assert.equal(serverRows[0].expected_return_date,'2026-10-13');
+assert.equal(serverRows[1].borrow_date,'2026-10-11');assert.equal(serverRows[1].expected_return_date,'2026-10-12');
+assert.equal(serverRows[2].borrow_date,null,'Unselected entries keep their dates');assert.equal(run('selected.size'),2);
+// A date collision must be detected before saving any entry.
+serverRows[1].expected_return_date='2026-10-13';await run('refreshCart()');element('pickupDate').value='2026-10-12';const beforeCollision=updates.length;
+await run('applySelectedPickup()');assert.equal(updates.length,beforeCollision);assert.match(element('cartMessage').textContent,/duplicate/);
+// Batch deletions are serialized; errors preserve the remaining entries.
+const removeApi=context.Api.removeCartItem;context.Api.removeCartItem=async id=>{if(String(id)==='202')throw Error('Delete failed');return removeApi(id);};
+await run('removeEntries(["201","202"])');assert.equal(serverRows.length,2);assert.equal(serverRows[0].cart_item_id,202);assert.match(element('cartMessage').textContent,/Delete failed/);
+context.Api.removeCartItem=removeApi;await run('removeEntries(["202","203"])');
+assert.equal(run('cartRows.length'),0);assert.equal(element('totalQuantity').textContent,0);assert.equal(element('checkoutBtn').disabled,true);
+assert.match(element('cartItems').innerHTML,/Your cart is currently empty/);assert.match(element('cartItems').innerHTML,/href="equipment.php"/);
+console.log('PASS: inline quantities, selected totals, batch pickup dates, date collisions, partial batch deletion, empty state, required shared modal details, quantity/date limits, separate dated entries, customer isolation, direct request compatibility, Modify modal saving/cancellation, aggregate stock/preflight, preserved failed carts, durable retries, entry-specific acknowledgments, and browser import safety.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/email_validation.php';
 require_once __DIR__ . '/../../includes/password_validation.php';
+require_once __DIR__ . '/../../includes/account_profile.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendJson(405, ['success' => false, 'message' => 'Method not allowed.']);
@@ -84,6 +85,9 @@ try {
         sendJson(409, ['success' => false, 'message' => 'This email address is already associated with an account.']);
     }
 
+    $conflict = profileConflict($db, $name, $email);
+    if ($conflict) sendJson(409, $conflict);
+
     // Public registration can only ever create a "customer" account.
     // Admin/staff accounts are created by an admin via the users endpoint.
     $roleStmt = $db->prepare('SELECT role_id FROM roles WHERE role_name = :role_name');
@@ -112,8 +116,8 @@ try {
         'data'    => ['user_id' => $newUserId, 'name' => $name, 'email' => $email, 'role' => 'customer'],
     ]);
 } catch (PDOException $e) {
-    if ($e->getCode() === '23000') {
-        sendJson(409, ['success' => false, 'message' => 'This email address is already associated with an account.']);
+    if ((int)($e->errorInfo[1] ?? 0) === 1062) {
+        sendJson(409, profileConflict($db, $name, $email) ?? ['success' => false, 'message' => 'This name or email is already associated with an account.']);
     }
     sendJson(500, ['success' => false, 'message' => 'Registration failed. Please try again.']);
 }

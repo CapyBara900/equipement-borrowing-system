@@ -6,40 +6,75 @@
 <title>Borrowing Cart — Equipment Desk</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="assets/css/styles.css" rel="stylesheet">
+<link href="assets/css/styles.css?v=account-profile-v1" rel="stylesheet">
+<link href="assets/css/cart.css?v=cart-redesign-v1" rel="stylesheet">
+<link href="assets/css/sidebar.css?v=sidebar-v3" rel="stylesheet">
 </head>
-<body>
+<body class="cart-page">
 
 <header class="topbar">
   <span class="brand">Equipment Desk</span>
   <button class="btn btn-sm btn-outline-light" type="button"
-          data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Open menu">Menu</button>
+          data-sidebar-open="#mobileNav" aria-label="Open menu">Menu</button>
 </header>
 
-<div class="offcanvas offcanvas-start rail-canvas" tabindex="-1" id="mobileNav">
-  <div class="offcanvas-body p-0"></div>
+<div class="rail-canvas sidebar-drawer" tabindex="-1" id="mobileNav" role="dialog" aria-modal="true" aria-label="Main navigation" hidden>
+  <div class="offcanvas-body sidebar"></div>
 </div>
 
 <div class="app-shell">
-  <aside class="rail"></aside>
+  <aside class="rail sidebar" aria-label="Main navigation"></aside>
 
   <main class="main">
-    <div class="page-head"><div><h1>Borrowing Cart</h1><p>Choose equipment and plan your pickup. Click Modify to review borrowing details.</p></div><a class="btn btn-outline-secondary btn-sm" href="equipment.php">Browse equipment</a></div>
-    <p id="cartAvailability" class="cart-notice">Loading your saved borrowing cart…</p>
-    <div id="previousCartOffer" class="cart-notice mb-3" hidden><p id="previousCartHint"></p><div id="previousCartItems"></div> <button class="btn btn-sm btn-outline-primary" type="button" id="importPreviousCart">Import previous browser cart</button></div>
-    <div id="cartMessage" role="status" aria-live="polite"></div>
+    <div class="page-head cart-page-head">
+      <div><span class="cart-eyebrow">YOUR EQUIPMENT, READY TO PLAN</span><h1>Borrowing Cart</h1><p>Review your equipment, adjust quantities, and choose your pickup dates.</p></div>
+      <a class="btn btn-outline-secondary" href="equipment.php"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8M12 13v9M7.5 5.5l9 5"/></svg>Browse equipment</a>
+    </div>
+    <div class="cart-banner" id="cartBanner">
+      <span class="cart-banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg></span>
+      <div class="cart-banner-content">
+        <strong>A little planning goes a long way</strong>
+        <p id="cartMessage" role="status" aria-live="polite">Loading your saved borrowing cart…</p>
+        <p id="cartAvailability" hidden></p>
+        <div id="previousCartOffer" hidden><p id="previousCartHint"></p><div id="previousCartItems"></div><button class="btn btn-outline-primary" type="button" id="importPreviousCart">Import previous browser cart</button></div>
+      </div>
+      <button class="cart-icon-button" id="dismissCartBanner" type="button" aria-label="Dismiss cart notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
     <div class="cart-layout">
-      <section aria-label="Equipment in cart">
-        <div class="panel mb-3"><div class="panel-body d-flex justify-content-between align-items-center gap-2"><label><input class="form-check-input me-2" type="checkbox" id="selectAll">Select all available equipment</label><button class="btn btn-sm btn-outline-secondary" id="refreshCart">Refresh availability</button></div></div>
-        <div id="cartItems"><div class="empty">Loading your cart…</div></div>
+      <section class="cart-equipment" aria-labelledby="cartEquipmentTitle">
+        <div class="cart-section-head"><h2 id="cartEquipmentTitle">Equipment in your cart <span id="cartEntryCount">0</span></h2><span class="cart-muted" id="cartSelectedCount" aria-live="polite">0 selected</span></div>
+        <div class="panel cart-toolbar" id="cartToolbar">
+          <label class="cart-select-all"><input class="form-check-input" type="checkbox" id="selectAll" disabled>Select all available equipment</label>
+          <div class="cart-toolbar-actions">
+            <button class="btn btn-outline-danger" id="deleteSelected" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>Delete selected</button>
+            <button class="cart-icon-button" id="refreshCart" type="button" title="Refresh availability" aria-label="Refresh availability"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 6a8 8 0 0 1 13 3M18 18a8 8 0 0 1-13-3"/></svg></button>
+          </div>
+        </div>
+        <div id="cartItems" aria-busy="true"><div class="cart-loading" role="status">Loading your cart…</div></div>
       </section>
-      <aside class="panel cart-summary"><div class="panel-head"><h2 class="mb-0">Selected equipment</h2></div><div class="panel-body"><div id="selectionSummary" aria-live="polite"></div><button class="btn btn-primary w-100 mt-3" id="checkoutBtn" disabled>Proceed to checkout</button></div></aside>
+      <aside class="panel cart-summary" aria-labelledby="cartSummaryTitle">
+        <div class="panel-head"><h2 id="cartSummaryTitle">Selected equipment</h2><span class="cart-summary-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l2 14H4L6 7Z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></span></div>
+        <div class="panel-body">
+          <div id="selectionSummary" aria-live="polite"><p class="cart-summary-empty">Select equipment to build your borrowing request.</p></div>
+          <dl class="cart-totals" aria-live="polite"><div><dt>Total Items</dt><dd id="totalItems">0</dd></div><div><dt>Total Quantity</dt><dd><span id="totalQuantity">0</span> <span class="cart-muted">units</span></dd></div></dl>
+          <div class="cart-pickup">
+            <label class="form-label" for="pickupDate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h3M14 15h3"/></svg>Pickup Date</label>
+            <input class="form-control" type="date" id="pickupDate" aria-describedby="pickupDateHint" disabled>
+            <p id="pickupDateHint" class="form-text">Select equipment to choose a pickup date.</p>
+            <button class="btn btn-outline-primary" id="applyPickupDate" type="button" disabled>Apply to selected</button>
+            <button class="cart-date-edit" id="resetPickupDate" type="button" hidden>Keep existing dates</button>
+          </div>
+          <button class="btn btn-primary cart-checkout-button" type="button" id="checkoutBtn" aria-describedby="checkoutHint" disabled>Proceed to checkout<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+          <p class="cart-checkout-hint" id="checkoutHint">Select at least one available item to continue.</p>
+        </div>
+        <div class="cart-summary-foot">Stock is reserved when you submit your request.</div>
+      </aside>
     </div>
     <section class="panel mt-4" id="checkout" hidden aria-labelledby="checkoutTitle">
       <div class="panel-head"><h2 class="mb-0" id="checkoutTitle" tabindex="-1">Checkout</h2></div>
       <form class="panel-body" id="checkoutForm">
         <div id="checkoutItems"></div>
-        <p class="form-text">Each entry uses its saved quantity, Pick Up On date, and Return By date. Click Modify on an entry to change them.</p>
+        <p class="form-text">Review each quantity and borrowing period before submitting. Use Edit dates on an entry or the Pickup Date selector to adjust your plan.</p>
         <p id="checkoutStatus" role="status" aria-live="polite">Checking checkout availability…</p>
         <button class="btn btn-outline-primary me-2" id="retryCart" type="button" hidden>Retry previous submission</button>
         <button class="btn btn-primary" id="submitCart" type="submit" disabled>Submit Borrowing Request</button>
@@ -66,8 +101,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<script src="assets/js/cart-dialogs.js?v=cart-redesign-v1"></script>
 <script src="assets/js/api.js?v=dated-cart-v2"></script>
-<script src="assets/js/app.js?v=staff-navigation-v3"></script>
-<script src="assets/js/cart.js?v=selected-quantity-v1"></script>
+<script src="assets/js/sidebar.js?v=sidebar-v3"></script>
+<script src="assets/js/app.js?v=sidebar-v1"></script>
+<script src="assets/js/cart.js?v=cart-redesign-v1"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/email_validation.php';
 require_once __DIR__ . '/../../includes/password_validation.php';
+require_once __DIR__ . '/../../includes/account_profile.php';
 require_once __DIR__ . '/../../includes/borrowing_management.php';
 
 const USER_SELECT = '
@@ -25,7 +26,10 @@ switch ($method) {
     case 'GET':
         requireRole(['admin']);
         $stmt = $db->query(USER_SELECT . ' ORDER BY u.name');
-        sendJson(200, ['success' => true, 'data' => $stmt->fetchAll()]);
+        if (empty($_SESSION['admin_users_csrf_token'])) {
+            $_SESSION['admin_users_csrf_token'] = bin2hex(random_bytes(32));
+        }
+        sendJson(200, ['success' => true, 'data' => $stmt->fetchAll(), 'csrf_token' => $_SESSION['admin_users_csrf_token']]);
         break;
 
     case 'POST':
@@ -56,6 +60,9 @@ switch ($method) {
         }
 
         try {
+            $conflict = profileConflict($db, $name, $email);
+            if ($conflict) sendJson(409, $conflict);
+
             $stmt = $db->prepare(
                 'INSERT INTO users (role_id, name, email, password_hash) VALUES (:role_id, :name, :email, :password_hash)'
             );
@@ -68,15 +75,15 @@ switch ($method) {
             $newId = (int)$db->lastInsertId();
             sendJson(201, ['success' => true, 'data' => ['user_id' => $newId, 'name' => $name, 'email' => $email, 'role' => $roleName]]);
         } catch (PDOException $e) {
-            if ($e->getCode() === '23000') {
-                sendJson(409, ['success' => false, 'message' => 'This email address is already associated with an account.']);
+            if ((int)($e->errorInfo[1] ?? 0) === 1062) {
+                sendJson(409, profileConflict($db, $name, $email) ?? ['success' => false, 'message' => 'This name or email is already associated with an account.']);
             }
             sendJson(409, ['success' => false, 'message' => 'Could not create user (email may already exist).']);
         }
         break;
 
     case 'PUT':
-        // Admin changes someone's role or restores a temporarily locked account. (e.g. promote a customer to staff).
+        // Admin changes roles, resets passwords, or restores temporarily locked accounts.
         requireRole(['admin']);
         $body = getJsonBody();
         $id = $body['user_id'] ?? null;
@@ -104,6 +111,55 @@ switch ($method) {
                 }
             }
             sendJson(200, ['success' => true, 'message' => 'Account access restored.']);
+        }
+
+        if ($action === 'reset_password') {
+            $resetUserId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($resetUserId === false) {
+                sendJson(400, ['success' => false, 'message' => 'A valid user_id is required.']);
+            }
+            if ($resetUserId === (int)$current['user_id']) {
+                sendJson(400, ['success' => false, 'message' => 'Use your account profile to change your own password.']);
+            }
+            $token = $body['csrf_token'] ?? null;
+            if (!is_string($token) || empty($_SESSION['admin_users_csrf_token'])
+                || !hash_equals($_SESSION['admin_users_csrf_token'], $token)) {
+                sendJson(403, ['success' => false, 'message' => 'Your form has expired. Reload this page and try again.', 'code' => 'CSRF_INVALID']);
+            }
+            $password = $body['password'] ?? null;
+            if (!is_string($password)) {
+                sendJson(400, ['success' => false, 'message' => 'A new password is required.', 'code' => 'PASSWORD_INVALID']);
+            }
+            // Bcrypt truncates passwords after 72 bytes.
+            if (strlen($password) > 72 || str_contains($password, "\0")) {
+                sendJson(400, ['success' => false, 'message' => 'New password must be 72 bytes or fewer and contain no null characters.', 'code' => 'PASSWORD_INVALID']);
+            }
+            try {
+                $db->beginTransaction();
+                $stmt = $db->prepare('SELECT user_id, name, email, password_hash FROM users WHERE user_id = :id FOR UPDATE');
+                $stmt->execute(['id' => $resetUserId]);
+                $target = $stmt->fetch();
+                if (!$target) {
+                    $db->rollBack();
+                    sendJson(404, ['success' => false, 'message' => 'User not found.']);
+                }
+                $passwordError = validateNewPassword($password, $target['name'], $target['email']);
+                if ($passwordError !== null) {
+                    $db->rollBack();
+                    sendJson(400, ['success' => false, 'message' => $passwordError, 'code' => 'PASSWORD_INVALID']);
+                }
+                if (password_verify($password, $target['password_hash'])) {
+                    $db->rollBack();
+                    sendJson(400, ['success' => false, 'message' => 'Choose a password different from the current password.', 'code' => 'PASSWORD_INVALID']);
+                }
+                $stmt = $db->prepare('UPDATE users SET password_hash = :password_hash, failed_login_attempts = 0, locked_until = NULL WHERE user_id = :id');
+                $stmt->execute(['password_hash' => password_hash($password, PASSWORD_BCRYPT), 'id' => $resetUserId]);
+                $db->commit();
+                sendJson(200, ['success' => true, 'message' => 'Password reset successfully.']);
+            } catch (PDOException $error) {
+                if ($db->inTransaction()) $db->rollBack();
+                sendJson(500, ['success' => false, 'message' => 'Could not reset the password. Please try again.']);
+            }
         }
 
         $roleId = $roleName ? findRoleId($db, $roleName) : null;

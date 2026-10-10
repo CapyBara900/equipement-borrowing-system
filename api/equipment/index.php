@@ -9,7 +9,7 @@ const EQUIPMENT_SELECT = '
     LEFT JOIN categories c ON c.category_id = e.category_id
 ';
 
-$allowedSort = ['equipment_name', 'status', 'created_at'];
+$allowedSort = ['equipment_name', 'status', 'created_at', 'available_quantity'];
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -86,8 +86,8 @@ switch ($method) {
         $params = [];
 
         if (!empty($_GET['search'])) {
-            $conditions[] = '(e.equipment_name LIKE :search OR e.description LIKE :search OR e.serial_number LIKE :search)';
-            $params['search'] = '%' . $_GET['search'] . '%';
+            $conditions[] = '(e.equipment_name LIKE :search_name OR e.description LIKE :search_description OR e.serial_number LIKE :search_serial)';
+            foreach (['search_name','search_description','search_serial'] as $key) $params[$key] = '%' . $_GET['search'] . '%';
         }
         if (!empty($_GET['category_id'])) {
             $conditions[] = 'e.category_id = :category_id';
@@ -107,12 +107,19 @@ switch ($method) {
             $sql .= ' WHERE ' . implode(' AND ', $conditions);
         }
 
+        $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
+        $count = $db->prepare('SELECT COUNT(*) FROM equipment e' . $where);
+        $count->execute($params);
+        $total = (int)$count->fetchColumn();
+
         $sortBy = in_array($_GET['sort_by'] ?? '', $allowedSort, true) ? $_GET['sort_by'] : 'equipment_name';
         $sortDir = (strtoupper($_GET['sort_dir'] ?? '') === 'DESC') ? 'DESC' : 'ASC';
-        $sql .= " ORDER BY e.$sortBy $sortDir";
+        $sql .= " ORDER BY e.$sortBy $sortDir, e.equipment_id ASC";
 
         $page   = max(1, (int)($_GET['page'] ?? 1));
         $limit  = min(50, max(1, (int)($_GET['limit'] ?? 20)));
+        $pages = max(1, (int)ceil($total / $limit));
+        $page = min($page, $pages);
         $offset = ($page - 1) * $limit;
         $sql .= ' LIMIT :limit OFFSET :offset';
 
@@ -123,7 +130,7 @@ switch ($method) {
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
-        sendJson(200, ['success' => true, 'data' => $stmt->fetchAll(), 'page' => $page, 'limit' => $limit]);
+        sendJson(200, ['success' => true, 'data' => $stmt->fetchAll(), 'page' => $page, 'limit' => $limit, 'total' => $total, 'pages' => $pages, 'has_more' => $page < $pages]);
         } catch (PDOException $e) {
             sendJson(500, ['success' => false, 'message' => 'Could not load equipment. Please try again.']);
         }

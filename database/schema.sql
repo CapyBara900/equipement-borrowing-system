@@ -30,12 +30,13 @@ CREATE TABLE roles (
 CREATE TABLE users (
     user_id        INT AUTO_INCREMENT PRIMARY KEY,
     role_id        INT NOT NULL,
-    name           VARCHAR(100) NOT NULL,
+    name           VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
     email          VARCHAR(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
     password_hash  VARCHAR(255) NOT NULL,        -- bcrypt hash, never plain text
     failed_login_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
     locked_until   DATETIME NULL,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_users_profile_name (name),
     CONSTRAINT fk_users_role FOREIGN KEY (role_id)
         REFERENCES roles(role_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
